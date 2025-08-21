@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { CategoryGrid } from '@/components/CategoryGrid';
 import { Banner } from '@/components/Banner';
@@ -11,6 +12,7 @@ import { Product, PageType } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activePage, setActivePage] = useState<PageType>('home');
@@ -63,26 +65,35 @@ const Index = () => {
   };
 
   const handleProductClick = (product: Product) => {
-    // For now, just add to cart. Later can implement product detail page
-    handleAddToCart(product);
+    navigate(`/product/${product.id}`);
   };
 
   const handleCheckout = () => {
     setIsCartOpen(false);
-    toast({
-      title: "Checkout",
-      description: "Checkout functionality would be implemented here.",
-    });
+    navigate('/checkout');
   };
 
   const handlePageChange = (page: PageType) => {
     setActivePage(page);
-    // For demo, all pages show home content
-    if (page !== 'home') {
+    if (page === 'orders') {
       toast({
-        title: page.charAt(0).toUpperCase() + page.slice(1),
-        description: `${page} page functionality would be implemented here.`,
+        title: "My Orders",
+        description: "Orders page functionality would be implemented here.",
       });
+    } else if (page === 'help') {
+      toast({
+        title: "Help & Support",
+        description: "Help page functionality would be implemented here.",
+      });
+    } else if (page === 'account') {
+      toast({
+        title: "My Account",
+        description: "Account page functionality would be implemented here.",
+      });
+    } else if (page === 'categories') {
+      // Reset to show all categories
+      setSelectedCategory('all');
+      setSearchQuery('');
     }
   };
 

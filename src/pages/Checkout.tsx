@@ -1,0 +1,404 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useCart } from '@/hooks/useCart';
+import { useToast } from '@/hooks/use-toast';
+import { Address } from '@/types';
+
+const Checkout = () => {
+  const navigate = useNavigate();
+  const { cart, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
+  const { toast } = useToast();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [address, setAddress] = useState<Address>({
+    fullName: '',
+    mobile: '',
+    pincode: '',
+    city: '',
+    state: '',
+    houseNo: '',
+    roadName: ''
+  });
+  const [selectedPayment, setSelectedPayment] = useState('upi');
+
+  const steps = [
+    { id: 1, name: 'Cart', completed: true },
+    { id: 2, name: 'Address', completed: currentStep > 2 },
+    { id: 3, name: 'Payment', completed: currentStep > 3 },
+    { id: 4, name: 'Summary', completed: false }
+  ];
+
+  const handleAddressSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setCurrentStep(3);
+  };
+
+  const handlePayment = () => {
+    if (selectedPayment === 'upi') {
+      toast({
+        title: "Processing Payment",
+        description: "Redirecting to UPI payment gateway...",
+      });
+    } else {
+      toast({
+        title: "Order Placed Successfully!",
+        description: "Your order has been confirmed.",
+      });
+    }
+    
+    // Clear cart and redirect
+    clearCart();
+    navigate('/');
+  };
+
+  if (cart.length === 0 && currentStep === 1) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-500 mb-4">Your cart is empty</p>
+          <Button onClick={() => navigate('/')}>Continue Shopping</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="bg-white shadow-sm sticky top-0 z-40">
+        <div className="px-4 py-3">
+          <div className="flex items-center">
+            <button onClick={() => navigate(-1)} className="mr-3">
+              <ArrowLeft className="text-gray-600 h-6 w-6" />
+            </button>
+            <h2 className="text-xl font-semibold">
+              {currentStep === 1 ? 'CART' : 
+               currentStep === 2 ? 'ADD DELIVERY ADDRESS' : 
+               currentStep === 3 ? 'PAYMENT' : 'ORDER SUMMARY'}
+            </h2>
+          </div>
+        </div>
+      </header>
+
+      {/* Stepper */}
+      <div className="bg-white px-4 py-4">
+        <div className="flex items-center justify-between">
+          {steps.map((step, index) => (
+            <div key={step.id} className="flex items-center">
+              <div className="flex items-center">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+                  step.completed 
+                    ? 'bg-fashion-purple text-white' 
+                    : currentStep === step.id
+                    ? 'bg-fashion-purple text-white'
+                    : 'bg-gray-300 text-gray-600'
+                }`}>
+                  {step.completed ? '✓' : step.id}
+                </div>
+                <span className="ml-2 text-sm">{step.name}</span>
+              </div>
+              {index < steps.length - 1 && (
+                <div className="flex-1 h-px bg-gray-300 mx-4"></div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <main className="pb-24">
+        {/* Step 1: Cart */}
+        {currentStep === 1 && (
+          <div className="p-4">
+            <div className="space-y-4">
+              {cart.map((item) => (
+                <div key={`${item.id}-${item.size}`} className="bg-white rounded-lg p-4 flex space-x-4">
+                  <img 
+                    src={item.image} 
+                    alt={item.name}
+                    className="w-20 h-24 object-cover rounded"
+                  />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-sm mb-1">{item.name}</h3>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="font-semibold">₹{item.price}</span>
+                      <span className="text-gray-400 line-through text-sm">₹{item.originalPrice}</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Size: {item.size}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-3">
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.size, -1)}
+                          className="w-8 h-8 rounded-full border flex items-center justify-center"
+                        >
+                          -
+                        </button>
+                        <span>Qty: {item.quantity.toString().padStart(2, '0')}</span>
+                        <button 
+                          onClick={() => updateQuantity(item.id, item.size, 1)}
+                          className="w-8 h-8 rounded-full border flex items-center justify-center"
+                        >
+                          +
+                        </button>
+                      </div>
+                      <button 
+                        onClick={() => removeFromCart(item.id, item.size)}
+                        className="text-gray-400"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-white rounded-lg p-4 mt-4">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>Shipping:</span>
+                  <span className="text-green-600 font-medium">FREE</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Product Price:</span>
+                  <span>₹{getTotalPrice()}.00</span>
+                </div>
+                <hr />
+                <div className="flex justify-between font-semibold">
+                  <span>Order Total:</span>
+                  <span>₹{getTotalPrice()}.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 2: Address */}
+        {currentStep === 2 && (
+          <div className="p-4">
+            <div className="bg-white rounded-lg p-4">
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                  📍
+                </span>
+                Address
+              </h3>
+              
+              <form onSubmit={handleAddressSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="fullName">Full Name</Label>
+                  <Input
+                    id="fullName"
+                    value={address.fullName}
+                    onChange={(e) => setAddress({...address, fullName: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="mobile">Mobile number</Label>
+                  <Input
+                    id="mobile"
+                    type="tel"
+                    value={address.mobile}
+                    onChange={(e) => setAddress({...address, mobile: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="pincode">Pincode</Label>
+                  <Input
+                    id="pincode"
+                    value={address.pincode}
+                    onChange={(e) => setAddress({...address, pincode: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      value={address.city}
+                      onChange={(e) => setAddress({...address, city: e.target.value})}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="state">State</Label>
+                    <Select value={address.state} onValueChange={(value) => setAddress({...address, state: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select State" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Gujarat">Gujarat</SelectItem>
+                        <SelectItem value="Maharashtra">Maharashtra</SelectItem>
+                        <SelectItem value="Delhi">Delhi</SelectItem>
+                        <SelectItem value="Karnataka">Karnataka</SelectItem>
+                        <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div>
+                  <Label htmlFor="houseNo">House No., Building Name</Label>
+                  <Input
+                    id="houseNo"
+                    value={address.houseNo}
+                    onChange={(e) => setAddress({...address, houseNo: e.target.value})}
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="roadName">Road name, Area, Colony</Label>
+                  <Input
+                    id="roadName"
+                    value={address.roadName}
+                    onChange={(e) => setAddress({...address, roadName: e.target.value})}
+                    required
+                  />
+                </div>
+              </form>
+            </div>
+
+            <div className="mt-4 text-center">
+              <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
+                <span className="flex items-center">
+                  <span className="w-4 h-4 bg-blue-500 rounded mr-1"></span>
+                  PCI DSS Certified
+                </span>
+                <span className="flex items-center">
+                  <span className="w-4 h-4 bg-green-500 rounded mr-1"></span>
+                  100% Secured Payments
+                </span>
+                <span className="flex items-center">
+                  <span className="w-4 h-4 bg-purple-500 rounded mr-1"></span>
+                  Verified Merchant
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Step 3: Payment */}
+        {currentStep === 3 && (
+          <div className="p-4">
+            <div className="bg-white rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Select Payment Method</h3>
+                <div className="text-right">
+                  <div className="text-xs text-blue-600">100% SAFE</div>
+                  <div className="text-xs text-blue-600">PAYMENTS</div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 p-3 rounded-lg mb-6 flex items-center">
+                <span className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center mr-3 text-white text-xs">
+                  pay
+                </span>
+                <span className="text-blue-600 font-medium">Pay online & get EXTRA ₹33 off</span>
+              </div>
+
+              <div className="space-y-4">
+                <div className="border rounded-lg p-4">
+                  <h4 className="font-medium mb-3">PAY ONLINE</h4>
+                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value="upi" 
+                      checked={selectedPayment === 'upi'}
+                      onChange={(e) => setSelectedPayment(e.target.value)}
+                      className="mr-3"
+                    />
+                    <span className="w-8 h-6 bg-blue-500 rounded flex items-center justify-center mr-3 text-white text-xs">
+                      UPI
+                    </span>
+                    <span>UPI(GPay/PhonePe/Paytm)</span>
+                  </label>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-2">
+                <div className="flex justify-between">
+                  <span>Shipping:</span>
+                  <span className="text-green-600 font-medium">FREE</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Product Price:</span>
+                  <span>₹{getTotalPrice()}.00</span>
+                </div>
+                <hr />
+                <div className="flex justify-between font-semibold">
+                  <span>Order Total:</span>
+                  <span>₹{getTotalPrice()}.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Fixed Bottom Actions */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+        {currentStep === 1 && (
+          <>
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <div className="font-semibold">₹{getTotalPrice()}.00</div>
+                <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
+              </div>
+            </div>
+            <Button 
+              variant="fashion" 
+              size="lg" 
+              className="w-full"
+              onClick={() => setCurrentStep(2)}
+            >
+              Continue
+            </Button>
+          </>
+        )}
+        
+        {currentStep === 2 && (
+          <Button 
+            variant="fashion" 
+            size="lg" 
+            className="w-full"
+            onClick={() => setCurrentStep(3)}
+          >
+            Save Address and Continue
+          </Button>
+        )}
+        
+        {currentStep === 3 && (
+          <>
+            <div className="flex justify-between items-center mb-3">
+              <div>
+                <div className="font-semibold">₹{getTotalPrice()}.00</div>
+                <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
+              </div>
+            </div>
+            <Button 
+              variant="fashion" 
+              size="lg" 
+              className="w-full"
+              onClick={handlePayment}
+            >
+              PayNow
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Checkout;

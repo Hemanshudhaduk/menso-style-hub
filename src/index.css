@@ -50,7 +50,17 @@
     --input: 220 13% 91%;
     --ring: 280 67% 30%;
 
-    --radius: 0.5rem;
+  /* Fashion app specific gradients and effects */
+  --gradient-primary: linear-gradient(135deg, hsl(var(--fashion-purple)), hsl(var(--fashion-pink)));
+  --gradient-hero: linear-gradient(135deg, hsl(var(--fashion-purple)), hsl(var(--fashion-pink)));
+  --shadow-fashion: 0 10px 30px -10px hsl(var(--fashion-purple) / 0.3);
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* Custom color palette */
+  --fashion-purple: 280 91% 48%;
+  --fashion-pink: 338 77% 55%;
+  --fashion-light: 280 40% 95%;
+  --fashion-accent: 280 70% 85%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
