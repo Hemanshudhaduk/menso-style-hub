@@ -23,6 +23,7 @@ const Checkout = () => {
     houseNo: '',
     roadName: ''
   });
+  const [addressErrors, setAddressErrors] = useState<Partial<Record<keyof Address, string>>>({});
   const [selectedPayment, setSelectedPayment] = useState('upi');
 
   const steps = [
@@ -32,8 +33,39 @@ const Checkout = () => {
     { id: 4, name: 'Summary', completed: false }
   ];
 
+  const validateAddress = (addr: Address) => {
+    const errors: Partial<Record<keyof Address, string>> = {};
+
+    if (!addr.fullName.trim()) errors.fullName = 'Full name is required';
+    if (!addr.mobile.trim()) {
+      errors.mobile = 'Mobile number is required';
+    } else if (!/^\d{10}$/.test(addr.mobile.trim())) {
+      errors.mobile = 'Enter a valid 10-digit mobile number';
+    }
+    if (!addr.pincode.trim()) {
+      errors.pincode = 'Pincode is required';
+    } else if (!/^\d{6}$/.test(addr.pincode.trim())) {
+      errors.pincode = 'Enter a valid 6-digit pincode';
+    }
+    if (!addr.city.trim()) errors.city = 'City is required';
+    if (!addr.state.trim()) errors.state = 'State is required';
+    if (!addr.houseNo.trim()) errors.houseNo = 'House/Building is required';
+    if (!addr.roadName.trim()) errors.roadName = 'Road/Area/Colony is required';
+
+    setAddressErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleAddressSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateAddress(address)) {
+      toast({
+        title: 'Please complete your address',
+        description: 'Fix the highlighted fields to continue.',
+      });
+      return;
+    }
+    toast({ title: 'Address saved' });
     setCurrentStep(3);
   };
 
@@ -187,7 +219,7 @@ const Checkout = () => {
                 Address
               </h3>
               
-              <form onSubmit={handleAddressSubmit} className="space-y-4">
+              <form id="address-form" onSubmit={handleAddressSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="fullName">Full Name</Label>
                   <Input
@@ -196,6 +228,9 @@ const Checkout = () => {
                     onChange={(e) => setAddress({...address, fullName: e.target.value})}
                     required
                   />
+                  {addressErrors.fullName && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.fullName}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -207,6 +242,9 @@ const Checkout = () => {
                     onChange={(e) => setAddress({...address, mobile: e.target.value})}
                     required
                   />
+                  {addressErrors.mobile && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.mobile}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -217,6 +255,9 @@ const Checkout = () => {
                     onChange={(e) => setAddress({...address, pincode: e.target.value})}
                     required
                   />
+                  {addressErrors.pincode && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.pincode}</p>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -228,6 +269,9 @@ const Checkout = () => {
                       onChange={(e) => setAddress({...address, city: e.target.value})}
                       required
                     />
+                    {addressErrors.city && (
+                      <p className="text-red-500 text-xs mt-1">{addressErrors.city}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="state">State</Label>
@@ -243,6 +287,9 @@ const Checkout = () => {
                         <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
                       </SelectContent>
                     </Select>
+                    {addressErrors.state && (
+                      <p className="text-red-500 text-xs mt-1">{addressErrors.state}</p>
+                    )}
                   </div>
                 </div>
                 
@@ -254,6 +301,9 @@ const Checkout = () => {
                     onChange={(e) => setAddress({...address, houseNo: e.target.value})}
                     required
                   />
+                  {addressErrors.houseNo && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.houseNo}</p>
+                  )}
                 </div>
                 
                 <div>
@@ -264,6 +314,9 @@ const Checkout = () => {
                     onChange={(e) => setAddress({...address, roadName: e.target.value})}
                     required
                   />
+                  {addressErrors.roadName && (
+                    <p className="text-red-500 text-xs mt-1">{addressErrors.roadName}</p>
+                  )}
                 </div>
               </form>
             </div>
@@ -360,7 +413,14 @@ const Checkout = () => {
               variant="fashion" 
               size="lg" 
               className="w-full"
-              onClick={() => setCurrentStep(2)}
+              disabled={cart.length === 0}
+              onClick={() => {
+                if (cart.length === 0) {
+                  toast({ title: 'Your cart is empty' });
+                  return;
+                }
+                setCurrentStep(2);
+              }}
             >
               Continue
             </Button>
@@ -372,7 +432,8 @@ const Checkout = () => {
             variant="fashion" 
             size="lg" 
             className="w-full"
-            onClick={() => setCurrentStep(3)}
+            type="submit"
+            form="address-form"
           >
             Save Address and Continue
           </Button>

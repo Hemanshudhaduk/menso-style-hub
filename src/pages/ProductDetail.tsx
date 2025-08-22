@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Heart, ShoppingCart, Star, Share } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Notification } from '@/components/ui/notification';
 import { useCart } from '@/hooks/useCart';
 import { products } from '@/data/products';
 import { useToast } from '@/hooks/use-toast';
@@ -14,6 +15,7 @@ const ProductDetail = () => {
   const { toast } = useToast();
   const [selectedSize, setSelectedSize] = useState('S');
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [notification, setNotification] = useState({ show: false, message: '' });
 
   const product = products.find(p => p.id === parseInt(id || '0'));
 
@@ -27,10 +29,7 @@ const ProductDetail = () => {
 
   const handleAddToCart = () => {
     addToCart(product, selectedSize);
-    toast({
-      title: "Added to cart!",
-      description: `${product.name} has been added to your cart.`,
-    });
+    setNotification({ show: true, message: 'Added to cart!' });
   };
 
   const handleBuyNow = () => {
@@ -199,6 +198,14 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
+
+      {/* Simple Notification */}
+      <Notification
+        message={notification.message}
+        isVisible={notification.show}
+        onClose={() => setNotification({ show: false, message: '' })}
+        duration={2000}
+      />
 
       {/* Fixed Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">

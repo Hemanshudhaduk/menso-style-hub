@@ -6,6 +6,7 @@ import { Banner } from '@/components/Banner';
 import { ProductCard } from '@/components/ProductCard';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { CartSidebar } from '@/components/CartSidebar';
+import { Notification } from '@/components/ui/notification';
 import { useCart } from '@/hooks/useCart';
 import { products } from '@/data/products';
 import { Product, PageType } from '@/types';
@@ -17,6 +18,7 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activePage, setActivePage] = useState<PageType>('home');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [notification, setNotification] = useState({ show: false, message: '' });
   
   const { 
     cart, 
@@ -52,11 +54,12 @@ const Index = () => {
 
   const handleAddToCart = (product: Product) => {
     addToCart(product);
-    setIsCartOpen(true);
-    toast({
-      title: "Added to cart!",
-      description: `${product.name} has been added to your cart.`,
-    });
+    setNotification({ show: true, message: 'Added to cart!' });
+    
+    // Auto-close cart after a short delay
+    setTimeout(() => {
+      setIsCartOpen(false);
+    }, 1500);
   };
 
   const handleCategoryClick = (categoryId: string) => {
@@ -162,6 +165,14 @@ const Index = () => {
         onRemoveItem={removeFromCart}
         onCheckout={handleCheckout}
         totalPrice={getTotalPrice()}
+      />
+
+      {/* Simple Notification */}
+      <Notification
+        message={notification.message}
+        isVisible={notification.show}
+        onClose={() => setNotification({ show: false, message: '' })}
+        duration={2000}
       />
 
       {/* Bottom Navigation */}
