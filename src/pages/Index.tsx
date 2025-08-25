@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Heart, Home, ShoppingCart, HelpCircle, User, Grid2X2, CreditCard } from 'lucide-react';
+import { useUser } from '@/hooks/useUser';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -36,6 +37,7 @@ const Index = () => {
   } = useCart();
   
   const { toast } = useToast();
+  const { user } = useUser();
 
   // Filter products based on search and category
   const filteredProducts = useMemo(() => {
@@ -58,6 +60,7 @@ const Index = () => {
   }, [searchQuery, selectedCategory]);
 
   const handleAddToCart = (product: Product) => {
+    if (!user) { navigate('/signup'); return; }
     addToCart(product);
     setNotification({ show: true, message: 'Added to cart!' });
     
@@ -77,6 +80,7 @@ const Index = () => {
   };
 
   const handleCheckout = () => {
+    if (!user) { navigate('/signup'); return; }
     setIsCartOpen(false);
     navigate('/checkout');
   };
@@ -86,15 +90,9 @@ const Index = () => {
     if (page === 'orders') {
       navigate('/orders');
     } else if (page === 'help') {
-      toast({
-        title: "Help & Support",
-        description: "Help page functionality would be implemented here.",
-      });
+      navigate('/help');
     } else if (page === 'account') {
-      toast({
-        title: "My Account",
-        description: "Account page functionality would be implemented here.",
-      });
+      navigate(user ? '/account' : '/signup');
     } else if (page === 'categories') {
       navigate('/categories');
     }
@@ -158,14 +156,14 @@ const Index = () => {
             <Button 
               variant="ghost" 
               className="w-full justify-start gap-3"
-              onClick={() => { setIsMenuOpen(false); toast({ title: 'Help & Support', description: 'Coming soon.' }); }}
+              onClick={() => { setIsMenuOpen(false); navigate('/help'); }}
             >
               <HelpCircle className="w-5 h-5" /> Help
             </Button>
             <Button 
               variant="ghost" 
               className="w-full justify-start gap-3"
-              onClick={() => { setIsMenuOpen(false); toast({ title: 'My Account', description: 'Coming soon.' }); }}
+              onClick={() => { setIsMenuOpen(false); navigate(user ? '/account' : '/signup'); }}
             >
               <User className="w-5 h-5" /> Account
             </Button>

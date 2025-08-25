@@ -5,23 +5,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { indianStates, stateToCities } from '@/data/indiaLocations';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
-import { Address } from '@/types';
+import { Address, Order } from '@/types';
 import { computeGaneshOfferDiscount } from '@/lib/utils';
 import { useOrders } from '@/hooks/useOrders';
+import { useUser } from '@/hooks/useUser';
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { cart, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(1);
+  const [selectedUpiProvider, setSelectedUpiProvider] = useState<'gpay' | 'phonepe' | 'paytm'>('gpay');
+  const [upiId, setUpiId] = useState('');
+  const [lastOrder, setLastOrder] = useState<Order | null>(null);
+  const { user } = useUser();
   const [address, setAddress] = useState<Address>({
-    fullName: '',
-    mobile: '',
-    pincode: '',
+    fullName: user ? `${user.firstName} ${user.lastName}` : '',
+    mobile: user ? user.mobile : '',
+    pincode: user ? user.pincode : '',
     city: '',
-    state: '',
+    state: user ? user.state : '',
     houseNo: '',
     roadName: ''
   });
@@ -81,21 +87,91 @@ const Checkout = () => {
 
   const handlePayment = () => {
     if (selectedPayment === 'upi') {
+      if (!upiId.trim()) {
+        toast({ title: 'Enter UPI ID', description: 'Please provide your UPI ID to continue.' });
+        return;
+      }
       toast({
-        title: "Processing Payment",
-        description: "Redirecting to UPI payment gateway...",
+        title: 'Processing Payment',
+        description: `Opening ${selectedUpiProvider.toUpperCase()}...`,
       });
     }
 
-    const order = placeOrder(cart, address, selectedPayment);
+    setTimeout(() => {
+      const order = placeOrder(cart, address, `${selectedPayment}-${selectedUpiProvider}`);
+      setLastOrder(order);
+      toast({
+        title: 'Payment Successful',
+        description: `Order ${order.id} confirmed.`,
+      });
+      clearCart();
+      setCurrentStep(4);
+    }, 800);
+  };
 
-    toast({
-      title: "Order Placed Successfully!",
-      description: `Order ${order.id} is confirmed.`,
-    });
-    
-    clearCart();
-    navigate('/orders');
+  const handleDownloadInvoice = () => {
+    if (!lastOrder) return;
+    const invoiceHtml = `
+      <html>
+        <head>
+          <meta charset=\"utf-8\" />
+          <title>Invoice ${lastOrder.id}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; }
+            h1 { font-size: 18px; margin: 0 0 8px; }
+            .section { margin-bottom: 16px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+            th { background: #f5f5f5; text-align: left; }
+            .right { text-align: right; }
+          </style>
+        </head>
+        <body>
+          <h1>Invoice</h1>
+          <div class=\"section\">
+            <div><strong>Order ID:</strong> ${lastOrder.id}</div>
+            <div><strong>Date:</strong> ${new Date(lastOrder.createdAt).toLocaleString()}</div>
+            <div><strong>Payment:</strong> ${lastOrder.paymentMethod}</div>
+          </div>
+          <div class=\"section\">
+            <div><strong>Ship To:</strong></div>
+            <div>${lastOrder.address.fullName}</div>
+            <div>${lastOrder.address.houseNo}, ${lastOrder.address.roadName}</div>
+            <div>${lastOrder.address.city}, ${lastOrder.address.state} - ${lastOrder.address.pincode}</div>
+            <div>${lastOrder.address.mobile}</div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Size</th>
+                <th class=\"right\">Qty</th>
+                <th class=\"right\">Price</th>
+                <th class=\"right\">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${lastOrder.items.map(i => `
+                <tr>
+                  <td>${i.name}</td>
+                  <td>${i.size}</td>
+                  <td class=\"right\">${i.quantity}</td>
+                  <td class=\"right\">₹${i.price}.00</td>
+                  <td class=\"right\">₹${i.price * i.quantity}.00</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <div class=\"section\" style=\"text-align:right;margin-top:12px\"><strong>Total: ₹${lastOrder.total}.00</strong></div>
+        </body>
+      </html>
+    `;
+    const win = window.open('', '_blank');
+    if (!win) return;
+    win.document.write(invoiceHtml);
+    win.document.close();
+    win.focus();
+    win.print();
   };
 
   if (cart.length === 0 && currentStep === 1) {
@@ -110,7 +186,7 @@ const Checkout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="px-4 py-3">
@@ -142,17 +218,17 @@ const Checkout = () => {
                 }`}>
                   {step.completed ? '✓' : step.id}
                 </div>
-                <span className="ml-2 text-sm">{step.name}</span>
+                <span className="ml-2 text-xs truncate max-w-[72px]">{step.name}</span>
               </div>
               {index < steps.length - 1 && (
-                <div className="flex-1 h-px bg-gray-300 mx-4"></div>
+                <div className="flex-1 h-px bg-gray-300 mx-2 md:mx-4"></div>
               )}
             </div>
           ))}
         </div>
       </div>
 
-      <main className="pb-24 max-w-xl mx-auto">
+      <main className="pb-28 max-w-xl mx-auto">
         {/* Step 1: Cart */}
         {currentStep === 1 && (
           <div className="p-4">
@@ -200,21 +276,41 @@ const Checkout = () => {
             </div>
 
             <div className="bg-white rounded-lg p-4 mt-4">
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Shipping:</span>
-                  <span className="text-green-600 font-medium">FREE</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total Product Price:</span>
-                  <span>₹{getTotalPrice()}.00</span>
-                </div>
-                <hr />
-                <div className="flex justify-between font-semibold">
-                  <span>Order Total:</span>
-                  <span>₹{getTotalPrice()}.00</span>
-                </div>
-              </div>
+              {(() => {
+                const quantity = cart.reduce((s, i) => s + i.quantity, 0);
+                const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
+                const finalTotal = getTotalPrice() - discount;
+                return (
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span>Cart Total:</span>
+                      {discount > 0 ? (
+                        <span className="font-semibold whitespace-nowrap">
+                          <span className="line-through mr-2">₹{getTotalPrice()}.00</span>
+                          <span className="text-green-600">₹{finalTotal}.00</span>
+                        </span>
+                      ) : (
+                        <span className="font-semibold">₹{getTotalPrice()}.00</span>
+                      )}
+                    </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Ganesh Offer (30% off)</span>
+                        <span>-₹{discount}.00</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Shipping:</span>
+                      <span className="text-green-600 font-medium">FREE</span>
+                    </div>
+                    <hr />
+                    <div className="flex justify-between font-semibold">
+                      <span>To Pay:</span>
+                      <span className="whitespace-nowrap">₹{finalTotal}.00</span>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -273,33 +369,35 @@ const Checkout = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="city">City</Label>
-                    <Input
-                      id="city"
-                      value={address.city}
-                      onChange={(e) => setAddress({...address, city: e.target.value})}
-                      required
-                    />
-                    {addressErrors.city && (
-                      <p className="text-red-500 text-xs mt-1">{addressErrors.city}</p>
-                    )}
-                  </div>
-                  <div>
                     <Label htmlFor="state">State</Label>
-                    <Select value={address.state} onValueChange={(value) => setAddress({...address, state: value})}>
+                    <Select value={address.state} onValueChange={(value) => setAddress({...address, state: value, city: ''})}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select State" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Gujarat">Gujarat</SelectItem>
-                        <SelectItem value="Maharashtra">Maharashtra</SelectItem>
-                        <SelectItem value="Delhi">Delhi</SelectItem>
-                        <SelectItem value="Karnataka">Karnataka</SelectItem>
-                        <SelectItem value="Tamil Nadu">Tamil Nadu</SelectItem>
+                        {indianStates.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     {addressErrors.state && (
                       <p className="text-red-500 text-xs mt-1">{addressErrors.state}</p>
+                    )}
+                  </div>
+                  <div>
+                    <Label htmlFor="city">City</Label>
+                    <Select value={address.city} onValueChange={(value) => setAddress({...address, city: value})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={address.state ? 'Select City' : 'Select State first'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(address.state ? stateToCities[address.state] : []).map((c) => (
+                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {addressErrors.city && (
+                      <p className="text-red-500 text-xs mt-1">{addressErrors.city}</p>
                     )}
                   </div>
                 </div>
@@ -387,6 +485,19 @@ const Checkout = () => {
                     </span>
                     <span>UPI(GPay/PhonePe/Paytm)</span>
                   </label>
+                  {selectedPayment === 'upi' && (
+                    <div className="mt-3 space-y-3">
+                      <div className="flex items-center space-x-2">
+                        <button className={`px-3 py-1 rounded border ${selectedUpiProvider==='gpay'?'bg-purple-50 border-purple-400':'border-gray-300'}`} onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('gpay'); }}>GPay</button>
+                        <button className={`px-3 py-1 rounded border ${selectedUpiProvider==='phonepe'?'bg-purple-50 border-purple-400':'border-gray-300'}`} onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('phonepe'); }}>PhonePe</button>
+                        <button className={`px-3 py-1 rounded border ${selectedUpiProvider==='paytm'?'bg-purple-50 border-purple-400':'border-gray-300'}`} onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('paytm'); }}>Paytm</button>
+                      </div>
+                      <div>
+                        <label className="text-sm text-gray-600">Your UPI ID</label>
+                        <input className="mt-1 w-full border rounded px-3 py-2 text-sm" placeholder="e.g. username@okicici" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -500,10 +611,41 @@ const Checkout = () => {
               size="lg" 
               className="w-full"
               onClick={handlePayment}
+              disabled={selectedPayment === 'upi' && !upiId.trim()}
             >
-              PayNow
+              Pay Now
             </Button>
           </>
+        )}
+
+        {currentStep === 4 && lastOrder && (
+          <div className="p-4">
+            <div className="bg-white rounded-lg p-4 space-y-3">
+              <h3 className="text-lg font-semibold">Order Summary</h3>
+              <div className="text-sm text-gray-600">Order ID: {lastOrder.id}</div>
+              <div className="text-sm">Payment: {lastOrder.paymentMethod}</div>
+              <div className="text-sm">
+                Ship To: {lastOrder.address.fullName}, {lastOrder.address.houseNo}, {lastOrder.address.roadName}, {lastOrder.address.city}, {lastOrder.address.state} - {lastOrder.address.pincode}
+              </div>
+              <div className="divide-y">
+                {lastOrder.items.map((i) => (
+                  <div key={`${i.id}-${i.size}`} className="py-2 flex justify-between text-sm">
+                    <div>
+                      <div className="font-medium">{i.name}</div>
+                      <div className="text-gray-600">Size: {i.size} • Qty: {i.quantity}</div>
+                    </div>
+                    <div className="font-medium">₹{i.price * i.quantity}.00</div>
+                  </div>
+                ))}
+              </div>
+              <div className="flex justify-between font-semibold pt-2">
+                <span>Total</span>
+                <span>₹{lastOrder.total}.00</span>
+              </div>
+              <Button variant="outline" onClick={handleDownloadInvoice}>Download Invoice (PDF)</Button>
+              <Button variant="fashion" onClick={() => navigate('/orders')} className="w-full">Go to Orders</Button>
+            </div>
+          </div>
         )}
       </div>
     </div>

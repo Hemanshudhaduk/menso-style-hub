@@ -65,7 +65,8 @@ const ProductDetail = () => {
               <button onClick={() => navigate(-1)} className="mr-3">
                 <ArrowLeft className="text-gray-600 h-6 w-6" />
               </button>
-              <h1 className="text-2xl font-bold text-fashion-purple">menso</h1>
+              {/* <h1 className="text-2xl font-bold text-fashion-purple">menso</h1> */}
+              <h1 className="text-3xl font-extrabold lowercase tracking-tight" style={{ color: '#6D106A' }}>meesho</h1>
             </div>
             <div className="flex items-center space-x-4">
               <button onClick={handleToggleLike}>

@@ -9,7 +9,7 @@ export const Banner = () => {
         <Button 
           variant="secondary" 
           size="sm" 
-          className="bg-white text-fashion-purple hover:bg-white/90 px-6 rounded-full font-medium"
+          className="bg-white text-fashion-purple px-6 rounded-full font-medium transition-all duration-200 ease-out hover:text-white hover:bg-gradient-to-r hover:from-pink-500 hover:to-purple-600 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-purple-500 hover:-translate-y-0.5"
         >
           SHOP NOW
         </Button>
