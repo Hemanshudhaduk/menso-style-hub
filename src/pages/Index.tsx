@@ -7,10 +7,14 @@ import { ProductCard } from '@/components/ProductCard';
 import { BottomNavigation } from '@/components/BottomNavigation';
 import { CartSidebar } from '@/components/CartSidebar';
 import { Notification } from '@/components/ui/notification';
+import { GaneshOfferBanner } from '@/components/GaneshOfferBanner';
 import { useCart } from '@/hooks/useCart';
 import { products } from '@/data/products';
 import { Product, PageType } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
+import { Heart, Home, ShoppingCart, HelpCircle, User, Grid2X2, CreditCard } from 'lucide-react';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -18,6 +22,7 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [activePage, setActivePage] = useState<PageType>('home');
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notification, setNotification] = useState({ show: false, message: '' });
   
   const { 
@@ -79,10 +84,7 @@ const Index = () => {
   const handlePageChange = (page: PageType) => {
     setActivePage(page);
     if (page === 'orders') {
-      toast({
-        title: "My Orders",
-        description: "Orders page functionality would be implemented here.",
-      });
+      navigate('/orders');
     } else if (page === 'help') {
       toast({
         title: "Help & Support",
@@ -94,9 +96,7 @@ const Index = () => {
         description: "Account page functionality would be implemented here.",
       });
     } else if (page === 'categories') {
-      // Reset to show all categories
-      setSelectedCategory('all');
-      setSearchQuery('');
+      navigate('/categories');
     }
   };
 
@@ -106,13 +106,78 @@ const Index = () => {
       <Header
         cartItemCount={getTotalItems()}
         onCartClick={() => setIsCartOpen(true)}
-        onMenuClick={() => toast({ title: "Menu", description: "Menu functionality would be implemented here." })}
+        onMenuClick={() => setIsMenuOpen(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
       />
 
+      {/* Slide-out Menu */}
+      <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
+        <SheetContent side="left" className="w-80 p-0">
+          <SheetHeader className="p-4 border-b">
+            {/* <SheetTitle>Menu</SheetTitle> */}
+            <h1 className="text-3xl font-extrabold lowercase tracking-tight" style={{ color: '#6D106A' }}>meesho</h1>
+          </SheetHeader>
+          <div className="p-2">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-3"
+              onClick={() => { setIsMenuOpen(false); navigate('/'); }}
+            >
+              <Home className="w-5 h-5" /> Home
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-3"
+              onClick={() => { setIsMenuOpen(false); setSelectedCategory('all'); setActivePage('categories'); }}
+            >
+              <Grid2X2 className="w-5 h-5" /> Categories
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-3"
+              onClick={() => { setIsMenuOpen(false); navigate('/likes'); }}
+            >
+              <Heart className="w-5 h-5" /> Likes
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-3"
+              onClick={() => { setIsMenuOpen(false); setIsCartOpen(true); }}
+            >
+              <ShoppingCart className="w-5 h-5" /> Cart
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-3"
+              onClick={() => { setIsMenuOpen(false); navigate('/checkout'); }}
+            >
+              <CreditCard className="w-5 h-5" /> Checkout
+            </Button>
+            <div className="h-px bg-border my-2" />
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-3"
+              onClick={() => { setIsMenuOpen(false); toast({ title: 'Help & Support', description: 'Coming soon.' }); }}
+            >
+              <HelpCircle className="w-5 h-5" /> Help
+            </Button>
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start gap-3"
+              onClick={() => { setIsMenuOpen(false); toast({ title: 'My Account', description: 'Coming soon.' }); }}
+            >
+              <User className="w-5 h-5" /> Account
+            </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
       {/* Main Content */}
       <main>
+        <div className="px-4 pt-4">
+          <GaneshOfferBanner />
+        </div>
         {/* Categories */}
         <CategoryGrid onCategoryClick={handleCategoryClick} />
 

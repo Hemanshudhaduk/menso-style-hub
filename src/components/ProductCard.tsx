@@ -11,7 +11,7 @@ interface ProductCardProps {
 export const ProductCard = ({ product, onProductClick, onAddToCart }: ProductCardProps) => {
   return (
     <div 
-      className="bg-card rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-1"
+      className="bg-card rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-1 flex flex-col h-full"
       onClick={() => onProductClick(product)}
     >
       <img 
@@ -19,7 +19,7 @@ export const ProductCard = ({ product, onProductClick, onAddToCart }: ProductCar
         alt={product.name}
         className="w-full aspect-[3/4] object-cover rounded-t-lg"
       />
-      <div className="p-3">
+      <div className="p-3 flex flex-col flex-1">
         <h3 className="text-sm font-medium mb-1 line-clamp-2 text-card-foreground">
           {product.name}
         </h3>
@@ -35,19 +35,21 @@ export const ProductCard = ({ product, onProductClick, onAddToCart }: ProductCar
             </span>
             <span className="text-xs text-muted-foreground ml-2">({product.reviews})</span>
           </div>
-          <span className="text-xs text-green-600 font-medium">Free Delivery</span>
+          <span className="text-xs text-green-600 font-medium whitespace-nowrap">Free Delivery</span>
         </div>
-        <Button 
-          variant="fashion"
-          size="sm"
-          className="w-full"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddToCart(product);
-          }}
-        >
-          Add to Cart
-        </Button>
+        <div className="mt-auto">
+          <Button 
+            variant="fashion"
+            size="sm"
+            className="w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddToCart(product);
+            }}
+          >
+            Add to Cart
+          </Button>
+        </div>
       </div>
     </div>
   );

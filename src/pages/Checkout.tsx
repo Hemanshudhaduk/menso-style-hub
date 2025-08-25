@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { Address } from '@/types';
+import { computeGaneshOfferDiscount } from '@/lib/utils';
+import { useOrders } from '@/hooks/useOrders';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -25,6 +27,14 @@ const Checkout = () => {
   });
   const [addressErrors, setAddressErrors] = useState<Partial<Record<keyof Address, string>>>({});
   const [selectedPayment, setSelectedPayment] = useState('upi');
+  const { placeOrder } = useOrders();
+  const getDiscountInfo = () => {
+    const quantity = cart.reduce((s, i) => s + i.quantity, 0);
+    const subtotal = getTotalPrice();
+    const discount = computeGaneshOfferDiscount(subtotal, quantity);
+    const total = subtotal - discount;
+    return { subtotal, discount, total };
+  };
 
   const steps = [
     { id: 1, name: 'Cart', completed: true },
@@ -75,16 +85,17 @@ const Checkout = () => {
         title: "Processing Payment",
         description: "Redirecting to UPI payment gateway...",
       });
-    } else {
-      toast({
-        title: "Order Placed Successfully!",
-        description: "Your order has been confirmed.",
-      });
     }
+
+    const order = placeOrder(cart, address, selectedPayment);
+
+    toast({
+      title: "Order Placed Successfully!",
+      description: `Order ${order.id} is confirmed.`,
+    });
     
-    // Clear cart and redirect
     clearCart();
-    navigate('/');
+    navigate('/orders');
   };
 
   if (cart.length === 0 && currentStep === 1) {
@@ -141,7 +152,7 @@ const Checkout = () => {
         </div>
       </div>
 
-      <main className="pb-24">
+      <main className="pb-24 max-w-xl mx-auto">
         {/* Step 1: Cart */}
         {currentStep === 1 && (
           <div className="p-4">
@@ -388,10 +399,25 @@ const Checkout = () => {
                   <span>Total Product Price:</span>
                   <span>₹{getTotalPrice()}.00</span>
                 </div>
+                {(() => {
+                  const quantity = cart.reduce((s, i) => s + i.quantity, 0);
+                  const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
+                  return discount > 0 ? (
+                    <div className="flex justify-between text-green-600">
+                      <span>Ganesh Offer (30% off)</span>
+                      <span>-₹{discount}.00</span>
+                    </div>
+                  ) : null;
+                })()}
                 <hr />
                 <div className="flex justify-between font-semibold">
                   <span>Order Total:</span>
-                  <span>₹{getTotalPrice()}.00</span>
+                  {(() => {
+                    const quantity = cart.reduce((s, i) => s + i.quantity, 0);
+                    const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
+                    const total = getTotalPrice() - discount;
+                    return <span>₹{total}.00</span>;
+                  })()}
                 </div>
               </div>
             </div>
@@ -405,7 +431,18 @@ const Checkout = () => {
           <>
             <div className="flex justify-between items-center mb-3">
               <div>
-                <div className="font-semibold">₹{getTotalPrice()}.00</div>
+                {(() => { const { subtotal, discount, total } = getDiscountInfo(); return (
+                  <div className="font-semibold">
+                    {discount > 0 ? (
+                      <>
+                        <span className="line-through mr-2">₹{subtotal}.00</span>
+                        <span className="text-green-600">₹{total}.00</span>
+                      </>
+                    ) : (
+                      <span>₹{subtotal}.00</span>
+                    )}
+                  </div>
+                ); })()}
                 <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
               </div>
             </div>
@@ -443,7 +480,18 @@ const Checkout = () => {
           <>
             <div className="flex justify-between items-center mb-3">
               <div>
-                <div className="font-semibold">₹{getTotalPrice()}.00</div>
+                {(() => { const { subtotal, discount, total } = getDiscountInfo(); return (
+                  <div className="font-semibold">
+                    {discount > 0 ? (
+                      <>
+                        <span className="line-through mr-2">₹{subtotal}.00</span>
+                        <span className="text-green-600">₹{total}.00</span>
+                      </>
+                    ) : (
+                      <span>₹{subtotal}.00</span>
+                    )}
+                  </div>
+                ); })()}
                 <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
               </div>
             </div>

@@ -45,3 +45,24 @@ export interface Address {
   houseNo: string;
   roadName: string;
 }
+
+export type OrderStatus = 'processing' | 'shipped' | 'delivered' | 'cancelled';
+
+export interface OrderItem {
+  id: number;
+  name: string;
+  image: string;
+  size: string;
+  price: number;
+  quantity: number;
+}
+
+export interface Order {
+  id: string;
+  createdAt: string; // ISO date
+  items: OrderItem[];
+  total: number;
+  address: Address;
+  paymentMethod: 'upi' | 'cod' | 'card' | string;
+  status: OrderStatus;
+}

@@ -4,7 +4,9 @@ import { ArrowLeft, Heart, ShoppingCart, Star, Share } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Notification } from '@/components/ui/notification';
+import { ProductCard } from '@/components/ProductCard';
 import { useCart } from '@/hooks/useCart';
+import { useWishlist } from '@/hooks/useWishlist';
 import { products } from '@/data/products';
 import { useToast } from '@/hooks/use-toast';
 
@@ -12,6 +14,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart, getTotalItems } = useCart();
+  const { isLiked, toggleLike } = useWishlist();
   const { toast } = useToast();
   const [selectedSize, setSelectedSize] = useState('S');
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -32,15 +35,25 @@ const ProductDetail = () => {
     setNotification({ show: true, message: 'Added to cart!' });
   };
 
+  const handleToggleLike = () => {
+    toggleLike(product.id);
+    setNotification({ show: true, message: isLiked(product.id) ? 'Removed from likes' : 'Added to likes' });
+  };
+
   const handleBuyNow = () => {
     addToCart(product, selectedSize);
     navigate('/checkout');
   };
 
-  // Mock similar products (in real app, this would be filtered by category)
+  // Similar products for thumbnails and recommendation block
   const similarProducts = products.filter(p => 
     p.category === product.category && p.id !== product.id
   ).slice(0, 5);
+
+  const recommendedLimit = product.category === 'kurtis' ? 6 : 4;
+  const recommendedProducts = products
+    .filter(p => p.category === product.category && p.id !== product.id)
+    .slice(0, recommendedLimit);
 
   return (
     <div className="min-h-screen bg-background">
@@ -55,7 +68,10 @@ const ProductDetail = () => {
               <h1 className="text-2xl font-bold text-fashion-purple">menso</h1>
             </div>
             <div className="flex items-center space-x-4">
-              <Heart className="text-red-500 h-6 w-6 cursor-pointer" />
+              <button onClick={handleToggleLike}>
+                <Heart className={`h-6 w-6 cursor-pointer ${isLiked(product.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}`} />
+              </button>
+              <Share className="h-6 w-6 text-gray-400 cursor-pointer" />
               <div className="relative cursor-pointer" onClick={() => navigate('/cart')}>
                 <ShoppingCart className="text-fashion-purple h-6 w-6" />
                 {getTotalItems() > 0 && (
@@ -74,8 +90,8 @@ const ProductDetail = () => {
         <div className="bg-white">
           <div className="aspect-[3/4] w-full">
             <img 
-              src={product.image} 
-              alt={product.name}
+              src={[product, ...similarProducts][selectedImageIndex]?.image}
+              alt={[product, ...similarProducts][selectedImageIndex]?.name || product.name}
               className="w-full h-full object-cover"
             />
           </div>
@@ -108,7 +124,9 @@ const ProductDetail = () => {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-semibold text-gray-900">{product.name}</h1>
             <div className="flex items-center space-x-3">
-              <Heart className="h-6 w-6 text-gray-400 cursor-pointer" />
+              <button onClick={handleToggleLike}>
+                <Heart className={`h-6 w-6 cursor-pointer ${isLiked(product.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}`} />
+              </button>
               <Share className="h-6 w-6 text-gray-400 cursor-pointer" />
             </div>
           </div>
@@ -135,8 +153,32 @@ const ProductDetail = () => {
             <Badge variant="secondary" className="bg-red-100 text-red-800">Trusted</Badge>
           </div>
 
-          <p className="text-green-600 font-medium mb-6">Free Delivery</p>
+          <div className="mb-6">
+            <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded whitespace-nowrap inline-flex items-center">
+              Free Delivery
+            </span>
+          </div>
         </div>
+
+        {/* Products For You */}
+        {/* {recommendedProducts.length > 0 && (
+          <div className="bg-white mt-2 p-4">
+            <h3 className="text-lg font-semibold mb-4">Products For You</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {recommendedProducts.map(rp => (
+                <ProductCard
+                  key={rp.id}
+                  product={rp}
+                  onProductClick={(p) => navigate(`/product/${p.id}`)}
+                  onAddToCart={(p) => {
+                    addToCart(p, selectedSize);
+                    setNotification({ show: true, message: 'Added to cart!' });
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )} */}
 
         {/* Size Selection */}
         <div className="bg-white mt-2 p-4">
@@ -196,6 +238,27 @@ const ProductDetail = () => {
               <li>• length- 2.5 mtr</li>
             </ul>
           </div>
+
+        
+        
+        {recommendedProducts.length > 0 && (
+          <div className="bg-white mt-2 p-4">
+            <h3 className="text-lg font-semibold mb-4">Products For You</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {recommendedProducts.map(rp => (
+                <ProductCard
+                  key={rp.id}
+                  product={rp}
+                  onProductClick={(p) => navigate(`/product/${p.id}`)}
+                  onAddToCart={(p) => {
+                    addToCart(p, selectedSize);
+                    setNotification({ show: true, message: 'Added to cart!' });
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
         </div>
       </main>
 

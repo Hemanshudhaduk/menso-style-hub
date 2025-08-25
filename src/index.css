@@ -135,6 +135,25 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground overflow-x-hidden;
   }
+}
+
+/* Prevent horizontal overflow app-wide while keeping inner carousels working */
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* Media elements should not overflow viewport width */
+img, video, canvas {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Avoid accidental layout expansion by long words/URLs */
+* {
+  box-sizing: border-box;
+  word-wrap: break-word;
 }

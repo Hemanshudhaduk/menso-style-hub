@@ -1,4 +1,5 @@
 import { X, Minus, Plus, Trash2, ShoppingCart } from 'lucide-react';
+import { computeGaneshOfferDiscount } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { CartItem } from '@/types';
 
@@ -102,34 +103,52 @@ export const CartSidebar = ({
           </div>
           
           {/* Footer - Fixed */}
-          {cart.length > 0 && (
-            <div className="border-t bg-white p-4 flex-shrink-0">
-              <div className="space-y-2 mb-4">
-                <div className="flex justify-between">
-                  <span>Cart Total:</span>
-                  <span className="font-semibold">₹{totalPrice}.00</span>
+          {cart.length > 0 && (() => {
+            const totalQty = cart.reduce((s, i) => s + i.quantity, 0);
+            const discount = computeGaneshOfferDiscount(totalPrice, totalQty);
+            const finalTotal = totalPrice - discount;
+            return (
+              <div className="border-t bg-white p-4 flex-shrink-0">
+                <div className="space-y-2 mb-4">
+                  <div className="flex justify-between">
+                    <span>Cart Total:</span>
+                    {discount > 0 ? (
+                      <span className="font-semibold whitespace-nowrap">
+                        <span className="line-through mr-2">₹{totalPrice}.00</span>
+                        <span className="text-green-600">₹{finalTotal}.00</span>
+                      </span>
+                    ) : (
+                      <span className="font-semibold">₹{totalPrice}.00</span>
+                    )}
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Ganesh Offer (30% off)</span>
+                      <span>-₹{discount}.00</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Shipping:</span>
+                    <span className="text-green-600 font-medium">FREE</span>
+                  </div>
+                  <hr />
+                  <div className="flex justify-between font-semibold">
+                    <span>To Pay:</span>
+                    <span className="whitespace-nowrap">₹{finalTotal}.00</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span>Shipping:</span>
-                  <span className="text-green-600 font-medium">FREE</span>
-                </div>
-                <hr />
-                <div className="flex justify-between font-semibold">
-                  <span>To Pay:</span>
-                  <span>₹{totalPrice}.00</span>
-                </div>
+                
+                <Button 
+                  variant="fashion" 
+                  size="lg" 
+                  className="w-full"
+                  onClick={onCheckout}
+                >
+                  Confirm Order
+                </Button>
               </div>
-              
-              <Button 
-                variant="fashion" 
-                size="lg" 
-                className="w-full"
-                onClick={onCheckout}
-              >
-                Confirm Order
-              </Button>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>

@@ -1,6 +1,8 @@
 import { Search, Heart, ShoppingCart, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useWishlist } from '@/hooks/useWishlist';
 
 interface HeaderProps {
   cartItemCount: number;
@@ -17,6 +19,11 @@ export const Header = ({
   searchQuery, 
   onSearchChange 
 }: HeaderProps) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { likedIds } = useWishlist();
+  const isLikesPage = location.pathname === '/likes';
+
   return (
     <header className="bg-card shadow-sm sticky top-0 z-40">
       <div className="px-4 py-3">
@@ -30,11 +37,11 @@ export const Header = ({
             >
               <Menu className="w-5 h-5" />
             </Button>
-            <h1 className="text-2xl font-bold text-fashion-purple">menso</h1>
+            <h1 className="text-3xl font-extrabold lowercase tracking-tight" style={{ color: '#6D106A' }}>meesho</h1>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon">
-              <Heart className="w-5 h-5 text-fashion-pink" />
+            <Button variant="ghost" size="icon" onClick={() => navigate(isLikesPage ? '/' : '/likes')}>
+              <Heart className={`w-6 h-6 ${likedIds.length > 0 || isLikesPage ? 'text-red-500 fill-red-500' : 'text-fashion-pink'}`} />
             </Button>
             <Button 
               variant="ghost" 
@@ -42,7 +49,7 @@ export const Header = ({
               className="relative"
               onClick={onCartClick}
             >
-              <ShoppingCart className="w-5 h-5 text-fashion-purple" />
+              <ShoppingCart className="w-6 h-6 text-fashion-purple" />
               {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-gradient-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                   {cartItemCount}
