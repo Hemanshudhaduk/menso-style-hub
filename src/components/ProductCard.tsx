@@ -23,21 +23,19 @@ export const ProductCard = ({
         alt={product.name}
         className="w-full aspect-[3/4] object-cover rounded-t-lg"
       />
-      <div className="p-3 flex flex-col flex-1">
-        {/* // ...existing code... */}
+      <div className="p-2 sm:p-3 flex flex-col flex-1">
+        {/* Product Name */}
         <h3
-          className="text-sm font-medium mb-1 line-clamp-2 text-card-foreground min-h-[2.5rem] flex items-center"
-          style={{ lineHeight: "1.25rem" }}
+          className="text-xs sm:text-sm font-medium mb-1 line-clamp-2 text-card-foreground min-h-[2.2rem] sm:min-h-[2.5rem] flex items-center"
+          style={{ lineHeight: "1.1rem" }}
         >
           {product.name}
         </h3>
-        {/* // ...existing code... */}
 
-        {/* // ...existing code... */}
         {/* Price and Offers */}
         <div className="flex flex-col gap-1 mb-2 sm:flex-row sm:items-center sm:gap-2">
-          <span className="inline-flex items-center text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded-full gap-1 sm:text-xs text-[11px]">
-            <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
+          <span className="inline-flex items-center text-[11px] sm:text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded-full gap-1">
+            <svg width="14" height="14" fill="none" viewBox="0 0 16 16">
               <circle cx="8" cy="8" r="8" fill="#2ECC71" />
               <text
                 x="8"
@@ -51,59 +49,34 @@ export const ProductCard = ({
               </text>
             </svg>
             ₹{(product.price * 39).toLocaleString()}
-            <span className="text-green-900 ml-1">with 1 Special Offers</span>
+            <span className="text-green-900 ml-1 whitespace-nowrap">with 1 Special Offers</span>
           </span>
-          <span className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full sm:text-xs text-[11px]">
+          <span className="inline-flex items-center text-[11px] sm:text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
             Free Delivery
           </span>
         </div>
-        {/* // ...existing code... */}
-        {/* <div className="flex items-center gap-2 mb-2">
-          <span className="inline-flex items-center text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded-full gap-1">
-            <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-              <circle cx="8" cy="8" r="8" fill="#2ECC71" />
-              <text
-                x="8"
-                y="12"
-                textAnchor="middle"
-                fontSize="10"
-                fill="#fff"
-                fontWeight="bold"
-              >
-                ₹
-              </text>
-            </svg>
-            ₹{(product.price * 39).toLocaleString()}{" "}
-            <span className="text-green-900">with 1 Special Offers</span>
+
+        {/* Rating and Trusted */}
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
+           <span className="bg-green-600 text-white text-xs sm:text-sm px-2 py-1 rounded flex items-center gap-1 font-bold">
+            {product.rating}
+            <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current text-white" />
           </span>
-          <span className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-            Free Delivery
+          <span className="text-xs sm:text-sm text-gray-500 font-bold">
+            ({product.reviews})
           </span>
-        </div> */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center font-bold">
-            <span className="bg-green-600 text-white text-sm px-2 py-1 rounded flex items-center gap-1">
-              {product.rating}
-              <Star className="w-4 h-4 fill-current text-white" />
-            </span>
-            <span className="text-sm text-gray-500 ml-2 font-bold">
-              ({product.reviews})
-            </span>
-          </div>
-          <span className="text-xs font-medium whitespace-nowrap inline-flex items-center gap-1">
+          <span className="inline-flex items-center ml-0 sm:ml-2 h-5 sm:h-6">
             <svg
-              width="55"
+              width="22"
               height="20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
+              className="mr-1"
+              style={{ display: "block" }}
             >
               <path
-                d="M9.901 5.496a2 2 0 0 1 2-2h41.6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-41.6a2 2 0 0 1-2-2v-9Z"
+                d="M9.901 5.496a2 2 0 0 1 2-2h7.6a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-7.6a2 2 0 0 1-2-2v-5Z"
                 fill="#FFE7FB"
-              ></path>
-              <path
-                d="M24.712 6H19.5v1.03h2.052v5.843h1.12V7.03h2.041V6ZM24.698 8.229v4.644h1.06v-2.17c0-1.09.52-1.532 1.228-1.532a.95.95 0 0 1 .353.06V8.198a.85.85 0 0 0-.363-.068c-.55 0-1.031.314-1.267.844h-.02v-.746h-.991ZM32.226 12.873V8.229h-1.07v2.67c0 .697-.481 1.188-1.09 1.188-.56 0-.884-.383-.884-1.1V8.23h-1.06v2.975c0 1.129.628 1.816 1.63 1.816.658 0 1.188-.314 1.443-.766h.05v.619h.981ZM35.25 13.02c1.1 0 1.846-.59 1.846-1.532 0-1.855-2.543-1.03-2.543-2.052 0-.304.236-.55.698-.55.422 0 .765.246.814.59l.992-.207c-.167-.706-.893-1.188-1.836-1.188-1.03 0-1.728.57-1.728 1.434 0 1.856 2.543 1.03 2.543 2.052 0 .393-.265.658-.756.658-.481 0-.874-.255-.992-.668l-.972.197c.226.795.943 1.266 1.934 1.266ZM40.083 12.97c.343 0 .638-.058.795-.136l-.118-.855a.992.992 0 0 1-.471.099c-.501 0-.747-.226-.747-.914V9.132h1.287v-.903h-1.287V6.746l-1.07.206V8.23h-.844v.903h.844v2.21c0 1.207.658 1.629 1.61 1.629ZM45.823 11.744l-.894-.265c-.206.422-.589.657-1.09.657-.746 0-1.256-.53-1.355-1.305h3.525v-.265c-.02-1.6-1.03-2.485-2.297-2.485-1.365 0-2.308 1.07-2.308 2.485 0 1.403.992 2.454 2.425 2.454.933 0 1.61-.442 1.994-1.276ZM43.73 8.906c.6 0 1.12.373 1.169 1.198h-2.406c.118-.766.56-1.198 1.237-1.198ZM46.776 10.556c0 1.463.923 2.464 2.17 2.464.619 0 1.237-.255 1.542-.854h.03v.707h.981V6h-1.07v2.828c-.246-.432-.766-.747-1.463-.747-1.247 0-2.19.992-2.19 2.475Zm1.07 0c0-.874.501-1.542 1.316-1.542.805 0 1.296.638 1.296 1.542 0 .893-.49 1.522-1.296 1.522-.795 0-1.315-.648-1.315-1.522Z"
-                fill="#9F2089"
               ></path>
               <path
                 d="M16.5 3.239 9.027.059a.746.746 0 0 0-.585 0L.969 3.24a.782.782 0 0 0-.47.721v6.36c0 5.321 3.139 7.611 7.947 9.622a.746.746 0 0 0 .576 0c4.809-2.01 7.948-4.3 7.948-9.622V3.96c0-.316-.186-.6-.47-.721Z"
@@ -118,9 +91,10 @@ export const ProductCard = ({
                 fill="#FF9D00"
               ></path>
             </svg>
-            {/* Trusted */}
+            <span className="ml-0.5 text-[10px] sm:text-xs font-semibold text-pink-700">Trusted</span>
           </span>
         </div>
+        {/* Add to Cart button (optional) */}
         {/* <div className="mt-auto">
           <Button 
             variant="fashion"
