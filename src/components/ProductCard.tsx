@@ -58,21 +58,20 @@ export const ProductCard = ({
 
         {/* Rating and Trusted */}
         <div className="flex items-center gap-2 mb-3 flex-wrap">
-           <span className="bg-green-600 text-white text-xs sm:text-sm px-2 py-1 rounded flex items-center gap-1 font-bold">
+          <span className="bg-green-600 text-white text-xs sm:text-sm px-2 py-1 rounded flex items-center gap-1 font-bold">
             {product.rating}
             <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current text-white" />
           </span>
           <span className="text-xs sm:text-sm text-gray-500 font-bold">
             ({product.reviews})
           </span>
-          <span className="inline-flex items-center ml-0 sm:ml-2 h-5 sm:h-6">
+          <span className="inline-flex items-center ml-0 sm:ml-2">
             <svg
               width="22"
               height="20"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
               className="mr-1"
-              style={{ display: "block" }}
             >
               <path
                 d="M9.901 5.496a2 2 0 0 1 2-2h7.6a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-7.6a2 2 0 0 1-2-2v-5Z"
