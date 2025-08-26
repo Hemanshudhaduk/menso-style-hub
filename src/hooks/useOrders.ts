@@ -23,7 +23,7 @@ export const useOrders = () => {
 
   const placeOrder = (cart: CartItem[], address: Address, paymentMethod: string): Order => {
     const items: OrderItem[] = cart.map(ci => ({
-      id: ci.id,
+      id: Number(ci.id),
       name: ci.name,
       image: ci.image,
       size: ci.size,

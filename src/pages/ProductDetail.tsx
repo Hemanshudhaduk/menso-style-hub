@@ -1,14 +1,14 @@
-import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Heart, ShoppingCart, Star, Share } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Notification } from '@/components/ui/notification';
-import { ProductCard } from '@/components/ProductCard';
-import { useCart } from '@/hooks/useCart';
-import { useWishlist } from '@/hooks/useWishlist';
-import { products } from '@/data/products';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, Heart, ShoppingCart, Star, Share } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Notification } from "@/components/ui/notification";
+import { ProductCard } from "@/components/ProductCard";
+import { useCart } from "@/hooks/useCart";
+import { useWishlist } from "@/hooks/useWishlist";
+import { products } from "@/data/products";
+import { useToast } from "@/hooks/use-toast";
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -16,11 +16,17 @@ const ProductDetail = () => {
   const { addToCart, getTotalItems } = useCart();
   const { isLiked, toggleLike } = useWishlist();
   const { toast } = useToast();
-  const [selectedSize, setSelectedSize] = useState('S');
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [notification, setNotification] = useState({ show: false, message: '' });
 
-  const product = products.find(p => p.id === parseInt(id || '0'));
+  // Dynamic state for UI actions
+  const [selectedSize, setSelectedSize] = useState("S");
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+  });
+
+  // Fetch product by id
+  const product = products.find((p) => String(p.id) === String(id));
 
   if (!product) {
     return (
@@ -30,30 +36,38 @@ const ProductDetail = () => {
     );
   }
 
+  // Gallery: Always use product.images[] if available, otherwise [product.image]
+  const galleryImages = product.images?.length
+    ? product.images
+    : [product.image];
+
+  // Recommended products: same category, not current id, up to 4/6 if kurtis
+  const recommendedLimit = product.category === "kurtis" ? 6 : 4;
+  const recommendedProducts = products
+    .filter(
+      (p) =>
+        p.category === product.category && String(p.id) !== String(product.id)
+    )
+    .slice(0, recommendedLimit);
+
+  // Cart/Wishlist actions
   const handleAddToCart = () => {
     addToCart(product, selectedSize);
-    setNotification({ show: true, message: 'Added to cart!' });
-  };
-
-  const handleToggleLike = () => {
-    toggleLike(product.id);
-    setNotification({ show: true, message: isLiked(product.id) ? 'Removed from likes' : 'Added to likes' });
+    setNotification({ show: true, message: "Added to cart!" });
   };
 
   const handleBuyNow = () => {
     addToCart(product, selectedSize);
-    navigate('/checkout');
+    navigate("/checkout");
   };
 
-  // Similar products for thumbnails and recommendation block
-  const similarProducts = products.filter(p => 
-    p.category === product.category && p.id !== product.id
-  ).slice(0, 5);
-
-  const recommendedLimit = product.category === 'kurtis' ? 6 : 4;
-  const recommendedProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, recommendedLimit);
+  const handleToggleLike = () => {
+    toggleLike(Number(product.id));
+    setNotification({
+      show: true,
+      message: isLiked(Number(product.id)) ? "Removed from likes" : "Added to likes",
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -65,15 +79,28 @@ const ProductDetail = () => {
               <button onClick={() => navigate(-1)} className="mr-3">
                 <ArrowLeft className="text-gray-600 h-6 w-6" />
               </button>
-              {/* <h1 className="text-2xl font-bold text-fashion-purple">menso</h1> */}
-              <h1 className="text-3xl font-extrabold lowercase tracking-tight" style={{ color: '#6D106A' }}>meesho</h1>
+              <h1
+                className="text-3xl font-extrabold lowercase tracking-tight"
+                style={{ color: "#6D106A" }}
+              >
+                meesho
+              </h1>
             </div>
             <div className="flex items-center space-x-4">
               <button onClick={handleToggleLike}>
-                <Heart className={`h-6 w-6 cursor-pointer ${isLiked(product.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}`} />
+                <Heart
+                  className={`h-6 w-6 cursor-pointer ${
+                    isLiked(Number(product.id))
+                      ? "text-red-500 fill-red-500"
+                      : "text-gray-400"
+                  }`}
+                />
               </button>
               <Share className="h-6 w-6 text-gray-400 cursor-pointer" />
-              <div className="relative cursor-pointer" onClick={() => navigate('/cart')}>
+              <div
+                className="relative cursor-pointer"
+                onClick={() => navigate("/cart")}
+              >
                 <ShoppingCart className="text-fashion-purple h-6 w-6" />
                 {getTotalItems() > 0 && (
                   <span className="absolute -top-2 -right-2 bg-fashion-pink text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
@@ -87,31 +114,34 @@ const ProductDetail = () => {
       </header>
 
       <main className="pb-24">
-        {/* Product Images */}
+        {/* Product Images - main and thumbnails */}
         <div className="bg-white">
           <div className="aspect-[3/4] w-full">
-            <img 
-              src={[product, ...similarProducts][selectedImageIndex]?.image}
-              alt={[product, ...similarProducts][selectedImageIndex]?.name || product.name}
+            <img
+              src={galleryImages[selectedImageIndex]}
+              alt={product.name}
               className="w-full h-full object-cover"
             />
           </div>
-          
-          {/* Similar Product Images */}
           <div className="p-4">
-            <p className="text-sm text-muted-foreground mb-3">7 Similar Products</p>
+            <p className="text-sm text-muted-foreground mb-3">
+              {galleryImages.length}{" "}
+              {galleryImages.length === 1 ? "Image" : "Images"}
+            </p>
             <div className="flex space-x-2 overflow-x-auto">
-              {[product, ...similarProducts].map((item, index) => (
-                <div 
-                  key={item.id}
+              {galleryImages.map((img, index) => (
+                <div
+                  key={index}
                   className={`flex-shrink-0 w-16 h-20 rounded border-2 cursor-pointer ${
-                    index === selectedImageIndex ? 'border-fashion-purple' : 'border-gray-200'
+                    index === selectedImageIndex
+                      ? "border-fashion-purple"
+                      : "border-gray-200"
                   }`}
                   onClick={() => setSelectedImageIndex(index)}
                 >
-                  <img 
-                    src={item.image} 
-                    alt={item.name}
+                  <img
+                    src={img}
+                    alt={`${product.name} ${index + 1}`}
                     className="w-full h-full object-cover rounded"
                   />
                 </div>
@@ -123,35 +153,56 @@ const ProductDetail = () => {
         {/* Product Info */}
         <div className="bg-white mt-2 p-4">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold text-gray-900">{product.name}</h1>
+            <h1 className="text-xl font-semibold text-gray-900">
+              {product.name}
+            </h1>
             <div className="flex items-center space-x-3">
               <button onClick={handleToggleLike}>
-                <Heart className={`h-6 w-6 cursor-pointer ${isLiked(product.id) ? 'text-red-500 fill-red-500' : 'text-gray-400'}`} />
+                <Heart
+                  className={`h-6 w-6 cursor-pointer ${
+                    isLiked(Number(product.id))
+                      ? "text-red-500 fill-red-500"
+                      : "text-gray-400"
+                  }`}
+                />
               </button>
               <Share className="h-6 w-6 text-gray-400 cursor-pointer" />
             </div>
           </div>
 
           <div className="flex items-center space-x-3 mb-4">
-            <span className="text-2xl font-bold text-gray-900">₹{product.price}.00</span>
-            <span className="text-lg text-gray-400 line-through">₹{product.originalPrice}.00</span>
-            <span className="text-lg text-green-600 font-medium">{product.discount}% off</span>
+            <span className="text-2xl font-bold text-gray-900">
+              ₹{product.price}.00
+            </span>
+            <span className="text-lg text-gray-400 line-through">
+              ₹{product.originalPrice}.00
+            </span>
+            <span className="text-lg text-green-600 font-medium">
+              {product.discount}% off
+            </span>
           </div>
 
           <div className="bg-green-50 p-3 rounded-lg mb-4">
-            <p className="text-green-700 font-medium">₹675 with 2 Special Offers</p>
+            <p className="text-green-700 font-medium">
+              ₹{product.price + 596} with 2 Special Offers
+            </p>
           </div>
 
           <div className="flex items-center space-x-4 mb-4">
             <div className="flex items-center">
-              <Badge variant="secondary" className="bg-green-100 text-green-800">
+              <Badge
+                variant="secondary"
+                className="bg-green-100 text-green-800"
+              >
                 {product.rating} <Star className="w-3 h-3 ml-1 fill-current" />
               </Badge>
               <span className="text-sm text-gray-500 ml-2">
-                {product.reviews} ratings and 50 reviews
+                {product.reviews} ratings
               </span>
             </div>
-            <Badge variant="secondary" className="bg-red-100 text-red-800">Trusted</Badge>
+            <Badge variant="secondary" className="bg-red-100 text-red-800">
+              Trusted
+            </Badge>
           </div>
 
           <div className="mb-6">
@@ -160,26 +211,6 @@ const ProductDetail = () => {
             </span>
           </div>
         </div>
-
-        {/* Products For You */}
-        {/* {recommendedProducts.length > 0 && (
-          <div className="bg-white mt-2 p-4">
-            <h3 className="text-lg font-semibold mb-4">Products For You</h3>
-            <div className="grid grid-cols-2 gap-4">
-              {recommendedProducts.map(rp => (
-                <ProductCard
-                  key={rp.id}
-                  product={rp}
-                  onProductClick={(p) => navigate(`/product/${p.id}`)}
-                  onAddToCart={(p) => {
-                    addToCart(p, selectedSize);
-                    setNotification({ show: true, message: 'Added to cart!' });
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-        )} */}
 
         {/* Size Selection */}
         <div className="bg-white mt-2 p-4">
@@ -191,8 +222,8 @@ const ProductDetail = () => {
                 onClick={() => setSelectedSize(size)}
                 className={`px-4 py-2 rounded-full border ${
                   selectedSize === size
-                    ? 'border-fashion-purple bg-fashion-purple/10 text-fashion-purple'
-                    : 'border-gray-300 text-gray-600'
+                    ? "border-fashion-purple bg-fashion-purple/10 text-fashion-purple"
+                    : "border-gray-300 text-gray-600"
                 }`}
               >
                 {size}
@@ -201,96 +232,107 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Product Details */}
+        {/* Product Details: dynamic rendering for kurta/pants/dupatta */}
         <div className="bg-white mt-2 p-4">
           <h3 className="text-lg font-semibold mb-4">Product Details</h3>
-          
           <div className="space-y-2 text-sm">
-            <p><span className="font-medium">Model is Wearing:</span> S Size</p>
-            <p><span className="font-medium">Model Height:</span> 5.5</p>
-            <p><span className="font-medium">Care:</span> {product.care}</p>
-            <p><span className="font-medium">Shipping Info:</span> {product.shipping}</p>
+            <p>
+              <span className="font-medium">Model is Wearing:</span>{" "}
+              {selectedSize} Size
+            </p>
+            <p>
+              <span className="font-medium">Care:</span> {product.care}
+            </p>
+            <p>
+              <span className="font-medium">Shipping Info:</span>{" "}
+              {product.shipping}
+            </p>
           </div>
 
-          <div className="mt-6">
-            <h4 className="font-semibold mb-3">Kurta:</h4>
-            <ul className="space-y-1 text-sm text-gray-600">
-              <li>• Fabric - Cotton (pure cotton)</li>
-              <li>• kali cut</li>
-              <li>• Kurta Length - 47-48"</li>
-              <li>• Front Neck - 7.5</li>
-              <li>• Back Neck - "Closed"</li>
-              <li>• Sleeves - 24" inches</li>
-            </ul>
-          </div>
+          {product.details?.kurta?.length > 0 && (
+            <div className="mt-6">
+              <h4 className="font-semibold mb-3">Kurta:</h4>
+              <ul className="space-y-1 text-sm text-gray-600">
+                {product.details.kurta.map((text, idx) => (
+                  <li key={idx}>• {text}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          <div className="mt-4">
-            <h4 className="font-semibold mb-3">pants:</h4>
-            <ul className="space-y-1 text-sm text-gray-600">
-              <li>• Fabric - Cotton</li>
-              <li>• Length - 38-40"</li>
-            </ul>
-          </div>
+          {product.details?.pants?.length > 0 && (
+            <div className="mt-4">
+              <h4 className="font-semibold mb-3">Pants:</h4>
+              <ul className="space-y-1 text-sm text-gray-600">
+                {product.details.pants.map((text, idx) => (
+                  <li key={idx}>• {text}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          <div className="mt-4">
-            <h4 className="font-semibold mb-3">dupatta:</h4>
-            <ul className="space-y-1 text-sm text-gray-600">
-              <li>• Fabric- Mul Mul</li>
-              <li>• length- 2.5 mtr</li>
-            </ul>
-          </div>
+          {product.details?.dupatta?.length > 0 && (
+            <div className="mt-4">
+              <h4 className="font-semibold mb-3">Dupatta:</h4>
+              <ul className="space-y-1 text-sm text-gray-600">
+                {product.details.dupatta.map((text, idx) => (
+                  <li key={idx}>• {text}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
 
-        
-        
+        {/* Recommended Products */}
         {recommendedProducts.length > 0 && (
           <div className="bg-white mt-2 p-4">
             <h3 className="text-lg font-semibold mb-4">Products For You</h3>
             <div className="grid grid-cols-2 gap-4">
-              {recommendedProducts.map(rp => (
+              {recommendedProducts.map((rp) => (
                 <ProductCard
                   key={rp.id}
                   product={rp}
                   onProductClick={(p) => navigate(`/product/${p.id}`)}
                   onAddToCart={(p) => {
                     addToCart(p, selectedSize);
-                    setNotification({ show: true, message: 'Added to cart!' });
+                    setNotification({ show: true, message: "Added to cart!" });
                   }}
                 />
               ))}
             </div>
           </div>
         )}
-        </div>
       </main>
 
-      {/* Simple Notification */}
+      {/* Notification */}
       <Notification
         message={notification.message}
         isVisible={notification.show}
-        onClose={() => setNotification({ show: false, message: '' })}
+        onClose={() => setNotification({ show: false, message: "" })}
         duration={2000}
       />
 
       {/* Fixed Bottom Actions */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
         <div className="flex space-x-3">
-          <Button 
-            variant="fashionOutline" 
-            size="lg" 
+          <Button
+            variant="fashionOutline"
+            size="lg"
             className="flex-1"
             onClick={handleAddToCart}
           >
             <ShoppingCart className="w-4 h-4 mr-2" />
             Add to Cart
           </Button>
-          <Button 
-            variant="fashion" 
-            size="lg" 
+          <Button
+            variant="fashion"
+            size="lg"
             className="flex-1"
             onClick={handleBuyNow}
           >
             Buy Now
           </Button>
+
         </div>
       </div>
     </div>

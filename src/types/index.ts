@@ -1,19 +1,26 @@
 export interface Product {
-  id: number;
+  id: number | string;
   name: string;
   price: number;
   originalPrice: number;
   discount: number;
   rating: number;
   reviews: number;
-  image: string;
-  category: 'kurtis' | 'combo2' | 'combo3' | 'all';
+  image: string; // main image
+  images?: string[]; // extra similar images
+  category: string;
   sizes: string[];
   description: string;
   fabric: string;
   care: string;
   shipping: string;
+  details?: {
+    kurta?: string[];
+    pants?: string[];
+    dupatta?: string[];
+  };
 }
+
 
 export interface CartItem extends Product {
   size: string;
