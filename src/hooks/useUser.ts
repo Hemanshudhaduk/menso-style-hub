@@ -33,7 +33,10 @@ export function useUser() {
     setUser(null);
   }, []);
 
-  return { user, saveUser, logout };
+
+  
+  const isLoggedIn = !!user;  
+  return { user, saveUser, logout ,isLoggedIn };
 }
 
 

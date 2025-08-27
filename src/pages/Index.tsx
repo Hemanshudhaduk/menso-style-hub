@@ -1,41 +1,57 @@
-import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Header } from '@/components/Header';
-import { CategoryGrid } from '@/components/CategoryGrid';
-import { Banner } from '@/components/Banner';
-import { ProductCard } from '@/components/ProductCard';
-import { BottomNavigation } from '@/components/BottomNavigation';
-import { CartSidebar } from '@/components/CartSidebar';
-import { Notification } from '@/components/ui/notification';
-import { GaneshOfferBanner } from '@/components/GaneshOfferBanner';
-import { useCart } from '@/hooks/useCart';
-import { products } from '@/data/products';
-import { Product, PageType } from '@/types';
-import { useToast } from '@/hooks/use-toast';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { Heart, Home, ShoppingCart, HelpCircle, User, Grid2X2, CreditCard } from 'lucide-react';
-import { useUser } from '@/hooks/useUser';
+import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { Header } from "@/components/Header";
+import { CategoryGrid } from "@/components/CategoryGrid";
+import { Banner } from "@/components/Banner";
+import { ProductCard } from "@/components/ProductCard";
+import { BottomNavigation } from "@/components/BottomNavigation";
+import { CartSidebar } from "@/components/CartSidebar";
+import { Notification } from "@/components/ui/notification";
+import { GaneshOfferBanner } from "@/components/GaneshOfferBanner";
+import { useCart } from "@/hooks/useCart";
+import { products } from "@/data/products";
+import { Product, PageType } from "@/types";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import {
+  Heart,
+  Home,
+  ShoppingCart,
+  HelpCircle,
+  User,
+  Grid2X2,
+  CreditCard,
+} from "lucide-react";
+import { useUser } from "@/hooks/useUser";
 
 const Index = () => {
   const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [activePage, setActivePage] = useState<PageType>('home');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [activePage, setActivePage] = useState<PageType>("home");
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [notification, setNotification] = useState({ show: false, message: '' });
-  
-  const { 
-    cart, 
-    addToCart, 
-    removeFromCart, 
-    updateQuantity, 
-    clearCart, 
-    getTotalItems, 
-    getTotalPrice 
+  const [notification, setNotification] = useState({
+    show: false,
+    message: "",
+  });
+
+  const {
+    cart,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    getTotalItems,
+    getTotalPrice,
   } = useCart();
-  
+
   const { toast } = useToast();
   const { user } = useUser();
 
@@ -44,15 +60,18 @@ const Index = () => {
     let filtered = products;
 
     // Filter by category
-    if (selectedCategory !== 'all') {
-      filtered = filtered.filter(product => product.category === selectedCategory);
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(
+        (product) => product.category === selectedCategory
+      );
     }
 
     // Filter by search query
     if (searchQuery.trim()) {
-      filtered = filtered.filter(product =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.category.toLowerCase().includes(searchQuery.toLowerCase())
+      filtered = filtered.filter(
+        (product) =>
+          product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          product.category.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
@@ -60,10 +79,13 @@ const Index = () => {
   }, [searchQuery, selectedCategory]);
 
   const handleAddToCart = (product: Product) => {
-    if (!user) { navigate('/signup'); return; }
+    if (!user) {
+      navigate("/signup");
+      return;
+    }
     addToCart(product);
-    setNotification({ show: true, message: 'Added to cart!' });
-    
+    setNotification({ show: true, message: "Added to cart!" });
+
     // Auto-close cart after a short delay
     setTimeout(() => {
       setIsCartOpen(false);
@@ -72,7 +94,7 @@ const Index = () => {
 
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    setSearchQuery(''); // Clear search when selecting category
+    setSearchQuery(""); // Clear search when selecting category
   };
 
   const handleProductClick = (product: Product) => {
@@ -80,21 +102,24 @@ const Index = () => {
   };
 
   const handleCheckout = () => {
-    if (!user) { navigate('/signup'); return; }
+    if (!user) {
+      navigate("/signup");
+      return;
+    }
     setIsCartOpen(false);
-    navigate('/checkout');
+    navigate("/checkout");
   };
 
   const handlePageChange = (page: PageType) => {
     setActivePage(page);
-    if (page === 'orders') {
-      navigate('/orders');
-    } else if (page === 'help') {
-      navigate('/help');
-    } else if (page === 'account') {
-      navigate(user ? '/account' : '/signup');
-    } else if (page === 'categories') {
-      navigate('/categories');
+    if (page === "orders") {
+      navigate("/orders");
+    } else if (page === "help") {
+      navigate("/help");
+    } else if (page === "account") {
+      navigate(user ? "/account" : "/signup");
+    } else if (page === "categories") {
+      navigate("/categories");
     }
   };
 
@@ -114,56 +139,84 @@ const Index = () => {
         <SheetContent side="left" className="w-80 p-0">
           <SheetHeader className="p-4 border-b">
             {/* <SheetTitle>Menu</SheetTitle> */}
-            <h1 className="text-3xl font-extrabold lowercase tracking-tight" style={{ color: '#6D106A' }}>meesho</h1>
+            <h1
+              className="text-3xl font-extrabold lowercase tracking-tight cursor-pointer"
+              style={{ color: "#6D106A" }}
+              onClick={() => navigate("/")} // 🔥 no refresh
+            >
+              meesho
+            </h1>{" "}
           </SheetHeader>
           <div className="p-2">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start gap-3"
-              onClick={() => { setIsMenuOpen(false); navigate('/'); }}
+              onClick={() => {
+                setIsMenuOpen(false);
+                navigate("/");
+              }}
             >
               <Home className="w-5 h-5" /> Home
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start gap-3"
-              onClick={() => { setIsMenuOpen(false); setSelectedCategory('all'); setActivePage('categories'); }}
+              onClick={() => {
+                setIsMenuOpen(false);
+                setSelectedCategory("all");
+                setActivePage("categories");
+              }}
             >
               <Grid2X2 className="w-5 h-5" /> Categories
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start gap-3"
-              onClick={() => { setIsMenuOpen(false); navigate('/likes'); }}
+              onClick={() => {
+                setIsMenuOpen(false);
+                navigate("/likes");
+              }}
             >
               <Heart className="w-5 h-5" /> Likes
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start gap-3"
-              onClick={() => { setIsMenuOpen(false); setIsCartOpen(true); }}
+              onClick={() => {
+                setIsMenuOpen(false);
+                setIsCartOpen(true);
+              }}
             >
               <ShoppingCart className="w-5 h-5" /> Cart
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start gap-3"
-              onClick={() => { setIsMenuOpen(false); navigate('/checkout'); }}
+              onClick={() => {
+                setIsMenuOpen(false);
+                navigate("/checkout");
+              }}
             >
               <CreditCard className="w-5 h-5" /> Checkout
             </Button>
             <div className="h-px bg-border my-2" />
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start gap-3"
-              onClick={() => { setIsMenuOpen(false); navigate('/help'); }}
+              onClick={() => {
+                setIsMenuOpen(false);
+                navigate("/help");
+              }}
             >
               <HelpCircle className="w-5 h-5" /> Help
             </Button>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start gap-3"
-              onClick={() => { setIsMenuOpen(false); navigate(user ? '/account' : '/signup'); }}
+              onClick={() => {
+                setIsMenuOpen(false);
+                navigate(user ? "/account" : "/signup");
+              }}
             >
               <User className="w-5 h-5" /> Account
             </Button>
@@ -183,13 +236,16 @@ const Index = () => {
         <Banner />
 
         {/* Products Section */}
-        <div className="px-4 py-2">
+        <div className="px-0 py-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">
-              {selectedCategory === 'all' ? 'Products For You' : 
-               selectedCategory === 'kurtis' ? 'Kurtis Collection' :
-               selectedCategory === 'combo2' ? 'Kurti 2 Combo Pack' :
-               'Kurti 3 Combo Pack'}
+            <h3 className="text-lg font-semibold px-2">
+              {selectedCategory === "all"
+                ? "Products For You"
+                : selectedCategory === "kurtis"
+                ? "Kurtis Collection"
+                : selectedCategory === "combo2"
+                ? "Kurti 2 Combo Pack"
+                : "Sarres"}
             </h3>
             {searchQuery && (
               <span className="text-sm text-muted-foreground">
@@ -197,15 +253,17 @@ const Index = () => {
               </span>
             )}
           </div>
-          
+
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                {searchQuery ? 'No products found for your search.' : 'No products in this category.'}
+                {searchQuery
+                  ? "No products found for your search."
+                  : "No products in this category."}
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-1">
               {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
@@ -234,7 +292,7 @@ const Index = () => {
       <Notification
         message={notification.message}
         isVisible={notification.show}
-        onClose={() => setNotification({ show: false, message: '' })}
+        onClose={() => setNotification({ show: false, message: "" })}
         duration={2000}
       />
 

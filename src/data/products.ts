@@ -137,8 +137,8 @@ export const products: Product[] = [
   },
   {
     id: 5,
-    name: "Kurti 3 Combo Pack",
-    price: 129,
+    name: "Sarees",
+    price: 199,
     originalPrice: 3000,
     discount: 96,
     rating: 4.8,
@@ -283,7 +283,7 @@ export const categories = [
   },
   {
     id: 'combo3',
-    name: 'Kurti 3 Com...',
+    name: 'Sarees',
     icon: 'Package',
     bgColor: 'bg-yellow-100',
     iconColor: 'text-yellow-500'

@@ -43,7 +43,7 @@ const Categories = () => {
           >
             <span className="flex items-center gap-3">
               <Layers3 className="w-5 h-5 text-fashion-purple" />
-              <span className="font-medium">Kurti 3 Combo</span>
+              <span className="font-medium">Sarees</span>
             </span>
             <span className="text-xs text-muted-foreground">View</span>
           </button>

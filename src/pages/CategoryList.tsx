@@ -14,7 +14,7 @@ const CategoryList = () => {
     return products.filter(p => p.category === category);
   }, [category]);
 
-  const title = category === 'kurtis' ? 'Kurtis' : category === 'combo2' ? 'Kurti 2 Combo' : category === 'combo3' ? 'Kurti 3 Combo' : 'Products';
+  const title = category === 'kurtis' ? 'Kurtis' : category === 'combo2' ? 'Kurti 2 Combo' : category === 'combo3' ? 'Sarees' : 'Products';
 
   return (
     <div className="min-h-screen bg-background pb-20">

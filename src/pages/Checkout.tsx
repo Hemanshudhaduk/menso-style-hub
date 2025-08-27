@@ -97,7 +97,7 @@ const Checkout = () => {
       });
     }
 
-    setTimeout(() => {
+    setTimeout(() => {  
       const order = placeOrder(cart, address, `${selectedPayment}-${selectedUpiProvider}`);
       setLastOrder(order);
       toast({
@@ -250,21 +250,21 @@ const Checkout = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <button 
-                          onClick={() => updateQuantity(item.id, item.size, -1)}
+                          onClick={() => updateQuantity(Number(item.id), item.size, -1)}
                           className="w-8 h-8 rounded-full border flex items-center justify-center"
                         >
                           -
                         </button>
                         <span>Qty: {item.quantity.toString().padStart(2, '0')}</span>
                         <button 
-                          onClick={() => updateQuantity(item.id, item.size, 1)}
+                          onClick={() => updateQuantity(Number(item.id), item.size, 1)}
                           className="w-8 h-8 rounded-full border flex items-center justify-center"
                         >
                           +
                         </button>
                       </div>
                       <button 
-                        onClick={() => removeFromCart(item.id, item.size)}
+                        onClick={() => removeFromCart(Number(item.id), item.size)}
                         className="text-gray-400"
                       >
                         <Trash2 className="w-4 h-4" />

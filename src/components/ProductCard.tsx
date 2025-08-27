@@ -18,78 +18,65 @@ export const ProductCard = ({
       className="bg-card rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-1 flex flex-col h-full"
       onClick={() => onProductClick(product)}
     >
+      {/* Image Part: unchanged */}
       <img
         src={product.image}
         alt={product.name}
         className="w-full aspect-[3/4] object-cover rounded-t-lg"
       />
       <div className="p-3 flex flex-col flex-1">
-        {/* // ...existing code... */}
+        {/* Product Name */}
         <h3
           className="text-sm font-medium mb-1 line-clamp-2 text-card-foreground min-h-[2.5rem] flex items-center"
           style={{ lineHeight: "1.25rem" }}
         >
           {product.name}
         </h3>
-        {/* // ...existing code... */}
 
-        {/* // ...existing code... */}
-        {/* Price and Offers */}
-        <div className="flex flex-col gap-1 mb-2 sm:flex-row sm:items-center sm:gap-2">
-          <span className="inline-flex items-center text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded-full gap-1 sm:text-xs text-[11px]">
-            <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-              <circle cx="8" cy="8" r="8" fill="#2ECC71" />
-              <text
-                x="8"
-                y="12"
-                textAnchor="middle"
-                fontSize="10"
-                fill="#fff"
-                fontWeight="bold"
-              >
-                ₹
-              </text>
-            </svg>
-            ₹{(product.price * 39).toLocaleString()}
-            <span className="text-green-900 ml-1">with 1 Special Offers</span>
+        {/* Bottom Part - Fixed and Redesigned */}
+
+        {/* Price with Original and Discount */}
+        <div className="flex flex-wrap items-center gap-2 mb-1">
+          <span className="text-lg font-extrabold text-gray-900">
+            ₹{product.price.toLocaleString()}
           </span>
-          <span className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full sm:text-xs text-[11px]">
+          <span className="text-xs line-through text-gray-400">
+            ₹{product.originalPrice.toLocaleString()}
+          </span>
+          <span className="text-xs font-semibold text-green-600">
+            {product.discount}% off
+          </span>
+        </div>
+
+        {/* Special Offer Badge */}
+        <div>
+          <span className="inline-flex items-center bg-green-100 text-green-900 text-xs font-semibold px-2 py-1 rounded-full">
+            ₹{(product.price + 4084).toLocaleString()} with 1 Special Offers
+          </span>
+        </div>
+
+        {/* Free Delivery Badge */}
+        <div className="mt-1">
+          <span className="inline-flex items-center bg-gray-100 text-green-700 text-xs font-medium px-2 py-1 rounded-full">
             Free Delivery
           </span>
         </div>
-        {/* // ...existing code... */}
-        {/* <div className="flex items-center gap-2 mb-2">
-          <span className="inline-flex items-center text-xs font-bold bg-green-100 text-green-800 px-2 py-1 rounded-full gap-1">
-            <svg width="16" height="16" fill="none" viewBox="0 0 16 16">
-              <circle cx="8" cy="8" r="8" fill="#2ECC71" />
-              <text
-                x="8"
-                y="12"
-                textAnchor="middle"
-                fontSize="10"
-                fill="#fff"
-                fontWeight="bold"
-              >
-                ₹
-              </text>
-            </svg>
-            ₹{(product.price * 39).toLocaleString()}{" "}
-            <span className="text-green-900">with 1 Special Offers</span>
-          </span>
-          <span className="inline-flex items-center text-xs bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-            Free Delivery
-          </span>
-        </div> */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center font-bold">
-            <span className="bg-green-600 text-white text-sm px-2 py-1 rounded flex items-center gap-1">
+
+        {/* Rating with Reviews and Trusted Badge in a row */}
+        {/* Rating with Reviews and Trusted Badge in a row */}
+        <div className="flex items-center justify-between mt-2">
+          {/* Rating and count */}
+          <div className="flex items-center font-bold gap-1 sm:gap-2 text-xs sm:text-sm">
+            <span className="bg-green-600 text-white px-1.5 py-0.5 rounded flex items-center gap-1 sm:gap-2">
               {product.rating}
-              <Star className="w-4 h-4 fill-current text-white" />
+              <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current text-white" />
             </span>
-            <span className="text-sm text-gray-500 ml-2 font-bold">
+            <span className="text-gray-500 font-bold px-0.5">
               ({product.reviews})
             </span>
           </div>
+
+          {/* Trusted Badge */}
           <span className="text-xs font-medium whitespace-nowrap inline-flex items-center gap-1">
             <svg
               width="55"
@@ -121,20 +108,8 @@ export const ProductCard = ({
             {/* Trusted */}
           </span>
         </div>
-        {/* <div className="mt-auto">
-          <Button 
-            variant="fashion"
-            size="sm"
-            className="w-full"
-            onClick={(e) => {
-              e.stopPropagation();
-              onAddToCart(product);
-            }}
-          >
-            Add to Cart
-          </Button>
-        </div> */}
       </div>
     </div>
   );
 };
+export default ProductCard;

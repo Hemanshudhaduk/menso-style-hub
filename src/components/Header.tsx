@@ -1,8 +1,10 @@
-import { Search, Heart, ShoppingCart, Menu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useWishlist } from '@/hooks/useWishlist';
+import { Search, Heart, ShoppingCart, Menu } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useWishlist } from "@/hooks/useWishlist";
+import { Link } from "react-router-dom";
+
 
 interface HeaderProps {
   cartItemCount: number;
@@ -12,40 +14,56 @@ interface HeaderProps {
   onSearchChange: (query: string) => void;
 }
 
-export const Header = ({ 
-  cartItemCount, 
-  onCartClick, 
-  onMenuClick, 
-  searchQuery, 
-  onSearchChange 
+export const Header = ({
+  cartItemCount,
+  onCartClick,
+  onMenuClick,
+  searchQuery,
+  onSearchChange,
 }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { likedIds } = useWishlist();
-  const isLikesPage = location.pathname === '/likes';
+  const isLikesPage = location.pathname === "/likes";
 
   return (
     <header className="bg-card shadow-sm sticky top-0 z-40">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
               onClick={onMenuClick}
               className="mr-3 md:hidden"
             >
               <Menu className="w-5 h-5" />
             </Button>
-            <h1 className="text-3xl font-extrabold lowercase tracking-tight" style={{ color: '#6D106A' }}>meesho</h1>
+            <h1
+              className="text-3xl font-extrabold lowercase tracking-tight cursor-pointer"
+              style={{ color: "#6D106A" }}
+              onClick={() => navigate("/")} // 🔥 no refresh
+            >
+              meesho
+            </h1>
           </div>
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(isLikesPage ? '/' : '/likes')}>
-              <Heart className={`w-6 h-6 ${likedIds.length > 0 || isLikesPage ? 'text-red-500 fill-red-500' : 'text-fashion-pink'}`} />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(isLikesPage ? "/" : "/likes")}
+            >
+              <Heart
+                className={`w-6 h-6 ${
+                  likedIds.length > 0 || isLikesPage
+                    ? "text-red-500 fill-red-500"
+                    : "text-fashion-pink"
+                }`}
+              />
             </Button>
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="relative"
               onClick={onCartClick}
             >
@@ -60,7 +78,7 @@ export const Header = ({
         </div>
         <div className="mt-3">
           <div className="relative">
-            <Input 
+            <Input
               type="text"
               placeholder="Search for Sarees, Kurtis, Cosmetics, etc."
               value={searchQuery}
