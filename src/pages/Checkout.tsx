@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,20 +8,151 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { indianStates, stateToCities } from '@/data/indiaLocations';
 import { useCart } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
-import { Address, Order } from '@/types';
+import { Address, Order, CartItem, OrderItem } from '@/types';
 import { computeGaneshOfferDiscount } from '@/lib/utils';
 import { useOrders } from '@/hooks/useOrders';
 import { useUser } from '@/hooks/useUser';
 
-const Checkout = () => {
+// API configuration
+const API_BASE_URL: string = 'http://localhost:5001/api';
+const RAZORPAY_KEY_ID: string = 'rzp_live_RAHSZS9k2sYCCf';
+
+// API response types
+interface APIResponse {
+  success: boolean;
+  message: string;
+}
+
+interface UPIValidationResponse extends APIResponse {
+  // Add any additional UPI validation specific fields if needed
+  
+}
+
+
+interface OrderCreationResponse extends APIResponse {
+  orderId: string;
+  amount: number;
+  currency: string;
+}
+
+interface PaymentVerificationResponse extends APIResponse {
+  // Add any additional verification specific fields if needed
+}
+
+// API service functions
+const paymentAPI = {
+  validateUPI: async (upiId: string): Promise<UPIValidationResponse> => {
+    const response = await fetch(`${API_BASE_URL}/validate-upi`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ upiId })
+    });
+    return response.json();
+  },
+
+  createOrder: async (orderData: any): Promise<OrderCreationResponse> => {
+    const response = await fetch(`${API_BASE_URL}/create-order`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData)
+    });
+    return response.json();
+  },
+
+  verifyPayment: async (paymentData: any): Promise<PaymentVerificationResponse> => {
+    const response = await fetch(`${API_BASE_URL}/verify-payment`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paymentData)
+    });
+    return response.json();
+  }
+};
+
+// Razorpay types
+interface RazorpayResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+interface RazorpayOptions {
+  key: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  prefill: {
+    name: string;
+    email: string;
+    contact: string;
+  };
+  notes: {
+    address: string;
+    upi_id: string;
+  };
+  theme: {
+    color: string;
+  };
+  method: {
+    upi: boolean;
+    card: boolean;
+    netbanking: boolean;
+    wallet: boolean;
+  };
+  handler: (response: RazorpayResponse) => Promise<void>;
+  modal: {
+    ondismiss: () => void;
+  };
+}
+
+// declare global {
+//   interface Window {
+//     Razorpay: new (options: RazorpayOptions) => {
+//       open: () => void;
+//     };
+//     upiValidationTimeout?: NodeJS.Timeout;
+//   }
+// }
+
+// Step interface
+interface CheckoutStep {
+  id: number;
+  name: string;
+  completed: boolean;
+}
+
+// UPI validation status type
+interface UPIValidationStatus {
+  isValid: boolean;
+  message: string;
+}
+
+// Enhanced Order interface with payment details
+interface EnhancedOrder extends Order {
+  paymentId?: string;
+  razorpayOrderId?: string;
+}
+
+// Address validation errors type
+type AddressErrors = Partial<Record<keyof Address, string>>;
+
+const Checkout: React.FC = () => {
   const navigate = useNavigate();
   const { cart, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const { toast } = useToast();
-  const [currentStep, setCurrentStep] = useState(1);
-  const [selectedUpiProvider, setSelectedUpiProvider] = useState<'gpay' | 'phonepe' | 'paytm'>('gpay');
-  const [upiId, setUpiId] = useState('');
-  const [lastOrder, setLastOrder] = useState<Order | null>(null);
+  const [currentStep, setCurrentStep] = useState<number>(1);
+  const [selectedUpiProvider, setSelectedUpiProvider] = useState<string>('gpay');
+  const [upiId, setUpiId] = useState<string>('');
+  const [lastOrder, setLastOrder] = useState<EnhancedOrder | null>(null);
   const { user } = useUser();
+  
+  // Loading states
+  const [isValidatingUPI, setIsValidatingUPI] = useState<boolean>(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
+  const [upiValidationStatus, setUpiValidationStatus] = useState<UPIValidationStatus | null>(null);
+
   const [address, setAddress] = useState<Address>({
     fullName: user ? `${user.firstName} ${user.lastName}` : '',
     mobile: user ? user.mobile : '',
@@ -31,10 +162,11 @@ const Checkout = () => {
     houseNo: '',
     roadName: ''
   });
-  const [addressErrors, setAddressErrors] = useState<Partial<Record<keyof Address, string>>>({});
-  const [selectedPayment, setSelectedPayment] = useState('upi');
+  const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
+  const [selectedPayment, setSelectedPayment] = useState<string>('upi');
   const { placeOrder } = useOrders();
-  const getDiscountInfo = () => {
+
+  const getDiscountInfo = (): { subtotal: number; discount: number; total: number } => {
     const quantity = cart.reduce((s, i) => s + i.quantity, 0);
     const subtotal = getTotalPrice();
     const discount = computeGaneshOfferDiscount(subtotal, quantity);
@@ -42,15 +174,15 @@ const Checkout = () => {
     return { subtotal, discount, total };
   };
 
-  const steps = [
+  const steps: CheckoutStep[] = [
     { id: 1, name: 'Cart', completed: true },
     { id: 2, name: 'Address', completed: currentStep > 2 },
     { id: 3, name: 'Payment', completed: currentStep > 3 },
     { id: 4, name: 'Summary', completed: false }
   ];
 
-  const validateAddress = (addr: Address) => {
-    const errors: Partial<Record<keyof Address, string>> = {};
+  const validateAddress = (addr: Address): boolean => {
+    const errors: AddressErrors = {};
 
     if (!addr.fullName.trim()) errors.fullName = 'Full name is required';
     if (!addr.mobile.trim()) {
@@ -72,7 +204,41 @@ const Checkout = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleAddressSubmit = (e: React.FormEvent) => {
+  // UPI validation with API call
+  const handleUPIValidation = async (inputUpiId: string): Promise<void> => {
+    if (!inputUpiId.trim()) {
+      setUpiValidationStatus(null);
+      return;
+    }
+
+    setIsValidatingUPI(true);
+    try {
+      const result = await paymentAPI.validateUPI(inputUpiId);
+      if (result.success) {
+        setUpiValidationStatus({ isValid: true, message: 'UPI ID is valid' });
+      } else {
+        setUpiValidationStatus({ isValid: false, message: result.message });
+      }
+    } catch (error) {
+      console.error('UPI validation error:', error);
+      setUpiValidationStatus({ isValid: false, message: 'Unable to validate UPI ID' });
+    } finally {
+      setIsValidatingUPI(false);
+    }
+  };
+
+  const handleUPIChange = (value: string): void => {
+    setUpiId(value);
+    // Debounce validation
+    if (window.upiValidationTimeout) {
+      clearTimeout(window.upiValidationTimeout);
+    }
+    window.upiValidationTimeout = setTimeout(() => {
+      handleUPIValidation(value);
+    }, 500);
+  };
+
+  const handleAddressSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (!validateAddress(address)) {
       toast({
@@ -85,36 +251,159 @@ const Checkout = () => {
     setCurrentStep(3);
   };
 
-  const handlePayment = () => {
+  // Load Razorpay script
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handlePayment = async (): Promise<void> => {
     if (selectedPayment === 'upi') {
       if (!upiId.trim()) {
         toast({ title: 'Enter UPI ID', description: 'Please provide your UPI ID to continue.' });
         return;
       }
-      toast({
-        title: 'Processing Payment',
-        description: `Opening ${selectedUpiProvider.toUpperCase()}...`,
-      });
+      if (upiValidationStatus && !upiValidationStatus.isValid) {
+        toast({ title: 'Invalid UPI ID', description: 'Please enter a valid UPI ID.' });
+        return;
+      }
     }
 
-    setTimeout(() => {  
-      const order = placeOrder(cart, address, `${selectedPayment}-${selectedUpiProvider}`);
-      setLastOrder(order);
+    setIsProcessingPayment(true);
+
+    try {
+      // Load Razorpay script
+      const scriptLoaded = await loadRazorpayScript();
+      if (!scriptLoaded) {
+        toast({ title: 'Error', description: 'Failed to load payment gateway' });
+        return;
+      }
+
+      // Calculate total amount
+      const { total } = getDiscountInfo();
+      const amountInPaisa = total * 100; // Convert to paisa
+
+      // Create order
+      const orderData = {
+        amount: amountInPaisa,
+        currency: 'INR',
+        upiId: upiId,
+        paymentMethod: selectedUpiProvider,
+        customerDetails: {
+          name: address.fullName,
+          email: user?.email || 'customer@example.com',
+          contact: address.mobile
+        }
+      };
+
+      const orderResponse = await paymentAPI.createOrder(orderData);
+
+      if (!orderResponse.success) {
+        toast({ title: 'Error', description: orderResponse.message });
+        return;
+      }
+
+      // Razorpay options
+      const options: RazorpayOptions = {
+        key: RAZORPAY_KEY_ID,
+        amount: orderResponse.amount,
+        currency: orderResponse.currency,
+        name: 'Your Store Name',
+        description: `Order for ${cart.length} items`,
+        order_id: orderResponse.orderId,
+        prefill: {
+          name: address.fullName,
+          email: user?.email || '',
+          contact: address.mobile,
+        },
+        notes: {
+          address: `${address.houseNo}, ${address.roadName}, ${address.city}`,
+          upi_id: upiId
+        },
+        theme: {
+          color: '#8B5CF6'
+        },
+        method: {
+          upi: selectedPayment === 'upi',
+          card: selectedPayment === 'card',
+          netbanking: selectedPayment === 'netbanking',
+          wallet: selectedPayment === 'wallet'
+        },
+        handler: async function (response: RazorpayResponse): Promise<void> {
+          try {
+            // Verify payment
+            const verificationResult = await paymentAPI.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            });
+
+            if (verificationResult.success) {
+              // Payment successful
+              const order = placeOrder(cart, address, `${selectedPayment}-${selectedUpiProvider}`);
+              setLastOrder({
+                ...order,
+                paymentId: response.razorpay_payment_id,
+                razorpayOrderId: response.razorpay_order_id
+              });
+              
+              toast({
+                title: 'Payment Successful!',
+                description: `Order ${order.id} confirmed.`,
+              });
+              
+              clearCart();
+              setCurrentStep(4);
+            } else {
+              toast({
+                title: 'Payment Verification Failed',
+                description: 'Please contact support if amount was deducted.',
+              });
+            }
+          } catch (error) {
+            console.error('Payment verification error:', error);
+            toast({
+              title: 'Payment Verification Error',
+              description: 'Please contact support.',
+            });
+          }
+        },
+        modal: {
+          ondismiss: function(): void {
+            toast({
+              title: 'Payment Cancelled',
+              description: 'You can retry the payment anytime.',
+            });
+          }
+        }
+      };
+
+      // Open Razorpay checkout
+      const razorpay = new window.Razorpay(options);
+      razorpay.open();
+
+    } catch (error) {
+      console.error('Payment error:', error);
       toast({
-        title: 'Payment Successful',
-        description: `Order ${order.id} confirmed.`,
+        title: 'Payment Error',
+        description: 'Something went wrong. Please try again.',
       });
-      clearCart();
-      setCurrentStep(4);
-    }, 800);
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
-  const handleDownloadInvoice = () => {
+  const handleDownloadInvoice = (): void => {
     if (!lastOrder) return;
     const invoiceHtml = `
       <html>
         <head>
-          <meta charset=\"utf-8\" />
+          <meta charset="utf-8" />
           <title>Invoice ${lastOrder.id}</title>
           <style>
             body { font-family: Arial, sans-serif; padding: 24px; }
@@ -128,12 +417,13 @@ const Checkout = () => {
         </head>
         <body>
           <h1>Invoice</h1>
-          <div class=\"section\">
+          <div class="section">
             <div><strong>Order ID:</strong> ${lastOrder.id}</div>
+            <div><strong>Payment ID:</strong> ${lastOrder.paymentId || 'N/A'}</div>
             <div><strong>Date:</strong> ${new Date(lastOrder.createdAt).toLocaleString()}</div>
             <div><strong>Payment:</strong> ${lastOrder.paymentMethod}</div>
           </div>
-          <div class=\"section\">
+          <div class="section">
             <div><strong>Ship To:</strong></div>
             <div>${lastOrder.address.fullName}</div>
             <div>${lastOrder.address.houseNo}, ${lastOrder.address.roadName}</div>
@@ -145,9 +435,9 @@ const Checkout = () => {
               <tr>
                 <th>Item</th>
                 <th>Size</th>
-                <th class=\"right\">Qty</th>
-                <th class=\"right\">Price</th>
-                <th class=\"right\">Amount</th>
+                <th class="right">Qty</th>
+                <th class="right">Price</th>
+                <th class="right">Amount</th>
               </tr>
             </thead>
             <tbody>
@@ -155,14 +445,14 @@ const Checkout = () => {
                 <tr>
                   <td>${i.name}</td>
                   <td>${i.size}</td>
-                  <td class=\"right\">${i.quantity}</td>
-                  <td class=\"right\">₹${i.price}.00</td>
-                  <td class=\"right\">₹${i.price * i.quantity}.00</td>
+                  <td class="right">${i.quantity}</td>
+                  <td class="right">₹${i.price}.00</td>
+                  <td class="right">₹${i.price * i.quantity}.00</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
-          <div class=\"section\" style=\"text-align:right;margin-top:12px\"><strong>Total: ₹${lastOrder.total}.00</strong></div>
+          <div class="section" style="text-align:right;margin-top:12px"><strong>Total: ₹${lastOrder.total}.00</strong></div>
         </body>
       </html>
     `;
@@ -233,7 +523,7 @@ const Checkout = () => {
         {currentStep === 1 && (
           <div className="p-4">
             <div className="space-y-4">
-              {cart.map((item) => (
+              {cart.map((item: CartItem) => (
                 <div key={`${item.id}-${item.size}`} className="bg-white rounded-lg p-4 flex space-x-4">
                   <img 
                     src={item.image} 
@@ -391,7 +681,7 @@ const Checkout = () => {
                         <SelectValue placeholder={address.state ? 'Select City' : 'Select State first'} />
                       </SelectTrigger>
                       <SelectContent>
-                        {(address.state ? stateToCities[address.state] : []).map((c) => (
+                        {(address.state ? (stateToCities as Record<string, string[]>)[address.state] || [] : []).map((c) => (
                           <SelectItem key={c} value={c}>{c}</SelectItem>
                         ))}
                       </SelectContent>
@@ -488,16 +778,67 @@ const Checkout = () => {
                   {selectedPayment === 'upi' && (
                     <div className="mt-3 space-y-3">
                       <div className="flex items-center space-x-2">
-                        <button className={`px-3 py-1 rounded border ${selectedUpiProvider==='gpay'?'bg-purple-50 border-purple-400':'border-gray-300'}`} onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('gpay'); }}>GPay</button>
-                        <button className={`px-3 py-1 rounded border ${selectedUpiProvider==='phonepe'?'bg-purple-50 border-purple-400':'border-gray-300'}`} onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('phonepe'); }}>PhonePe</button>
-                        <button className={`px-3 py-1 rounded border ${selectedUpiProvider==='paytm'?'bg-purple-50 border-purple-400':'border-gray-300'}`} onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('paytm'); }}>Paytm</button>
+                        <button 
+                          className={`px-3 py-1 rounded border ${selectedUpiProvider === 'gpay' ? 'bg-purple-50 border-purple-400' : 'border-gray-300'}`} 
+                          onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('gpay'); }}
+                        >
+                          GPay
+                        </button>
+                        <button 
+                          className={`px-3 py-1 rounded border ${selectedUpiProvider === 'phonepe' ? 'bg-purple-50 border-purple-400' : 'border-gray-300'}`} 
+                          onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('phonepe'); }}
+                        >
+                          PhonePe
+                        </button>
+                        <button 
+                          className={`px-3 py-1 rounded border ${selectedUpiProvider === 'paytm' ? 'bg-purple-50 border-purple-400' : 'border-gray-300'}`} 
+                          onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('paytm'); }}
+                        >
+                          Paytm
+                        </button>
                       </div>
                       <div>
                         <label className="text-sm text-gray-600">Your UPI ID</label>
-                        <input className="mt-1 w-full border rounded px-3 py-2 text-sm" placeholder="e.g. username@okicici" value={upiId} onChange={(e) => setUpiId(e.target.value)} />
+                        <div className="relative">
+                          <input 
+                            className="mt-1 w-full border rounded px-3 py-2 text-sm pr-10" 
+                            placeholder="e.g. username@okicici" 
+                            value={upiId} 
+                            onChange={(e) => handleUPIChange(e.target.value)}
+                          />
+                          {isValidatingUPI && (
+                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        {upiValidationStatus && (
+                          <p className={`text-xs mt-1 ${upiValidationStatus.isValid ? 'text-green-600' : 'text-red-500'}`}>
+                            {upiValidationStatus.message}
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* Additional payment methods can be added here */}
+                <div className="border rounded-lg p-4 opacity-60">
+                  <h4 className="font-medium mb-3">OTHER METHODS</h4>
+                  <div className="space-y-2">
+                    <label className="flex items-center p-2 border rounded cursor-not-allowed opacity-50">
+                      <input type="radio" name="payment" value="card" disabled className="mr-3" />
+                      <span className="text-sm">Credit/Debit Card (Coming Soon)</span>
+                    </label>
+                    <label className="flex items-center p-2 border rounded cursor-not-allowed opacity-50">
+                      <input type="radio" name="payment" value="netbanking" disabled className="mr-3" />
+                      <span className="text-sm">Net Banking (Coming Soon)</span>
+                    </label>
+                    <label className="flex items-center p-2 border rounded cursor-not-allowed opacity-50">
+                      <input type="radio" name="payment" value="wallet" disabled className="mr-3" />
+                      <span className="text-sm">Wallet (Coming Soon)</span>
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -534,6 +875,98 @@ const Checkout = () => {
             </div>
           </div>
         )}
+
+        {/* Step 4: Order Summary */}
+        {currentStep === 4 && lastOrder && (
+          <div className="p-4">
+            <div className="bg-white rounded-lg p-4 space-y-4">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-green-600 text-2xl">✓</span>
+                </div>
+                <h3 className="text-xl font-semibold text-green-600 mb-2">Payment Successful!</h3>
+                <p className="text-gray-600">Your order has been placed successfully</p>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Order ID:</span>
+                  <span className="font-medium">{lastOrder.id}</span>
+                </div>
+                {lastOrder.paymentId && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Payment ID:</span>
+                    <span className="font-medium text-xs">{lastOrder.paymentId}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Payment Method:</span>
+                  <span className="font-medium capitalize">{lastOrder.paymentMethod}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Order Date:</span>
+                  <span className="font-medium">{new Date(lastOrder.createdAt).toLocaleDateString()}</span>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-3">Delivery Address</h4>
+                <div className="text-sm text-gray-600">
+                  <div className="font-medium text-gray-900">{lastOrder.address.fullName}</div>
+                  <div>{lastOrder.address.houseNo}, {lastOrder.address.roadName}</div>
+                  <div>{lastOrder.address.city}, {lastOrder.address.state} - {lastOrder.address.pincode}</div>
+                  <div>Mobile: {lastOrder.address.mobile}</div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h4 className="font-medium mb-3">Order Items</h4>
+                <div className="space-y-3">
+                  {lastOrder.items.map((item: OrderItem) => (
+                    <div key={`${item.id}-${item.size}`} className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <div className="font-medium text-sm">{item.name}</div>
+                        <div className="text-xs text-gray-600">Size: {item.size} • Qty: {item.quantity}</div>
+                      </div>
+                      <div className="font-medium">₹{item.price * item.quantity}.00</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="flex justify-between font-semibold text-lg">
+                  <span>Total Paid</span>
+                  <span className="text-green-600">₹{lastOrder.total}.00</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4">
+                <Button 
+                  variant="outline" 
+                  onClick={handleDownloadInvoice}
+                  className="w-full"
+                >
+                  Download Invoice (PDF)
+                </Button>
+                <Button 
+                  variant="fashion" 
+                  onClick={() => navigate('/orders')} 
+                  className="w-full"
+                >
+                  View All Orders
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate('/')} 
+                  className="w-full"
+                >
+                  Continue Shopping
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Fixed Bottom Actions */}
@@ -542,18 +975,21 @@ const Checkout = () => {
           <>
             <div className="flex justify-between items-center mb-3">
               <div>
-                {(() => { const { subtotal, discount, total } = getDiscountInfo(); return (
-                  <div className="font-semibold">
-                    {discount > 0 ? (
-                      <>
-                        <span className="line-through mr-2">₹{subtotal}.00</span>
-                        <span className="text-green-600">₹{total}.00</span>
-                      </>
-                    ) : (
-                      <span>₹{subtotal}.00</span>
-                    )}
-                  </div>
-                ); })()}
+                {(() => { 
+                  const { subtotal, discount, total } = getDiscountInfo(); 
+                  return (
+                    <div className="font-semibold">
+                      {discount > 0 ? (
+                        <>
+                          <span className="line-through mr-2">₹{subtotal}.00</span>
+                          <span className="text-green-600">₹{total}.00</span>
+                        </>
+                      ) : (
+                        <span>₹{subtotal}.00</span>
+                      )}
+                    </div>
+                  ); 
+                })()}
                 <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
               </div>
             </div>
@@ -591,18 +1027,21 @@ const Checkout = () => {
           <>
             <div className="flex justify-between items-center mb-3">
               <div>
-                {(() => { const { subtotal, discount, total } = getDiscountInfo(); return (
-                  <div className="font-semibold">
-                    {discount > 0 ? (
-                      <>
-                        <span className="line-through mr-2">₹{subtotal}.00</span>
-                        <span className="text-green-600">₹{total}.00</span>
-                      </>
-                    ) : (
-                      <span>₹{subtotal}.00</span>
-                    )}
-                  </div>
-                ); })()}
+                {(() => { 
+                  const { subtotal, discount, total } = getDiscountInfo(); 
+                  return (
+                    <div className="font-semibold">
+                      {discount > 0 ? (
+                        <>
+                          <span className="line-through mr-2">₹{subtotal}.00</span>
+                          <span className="text-green-600">₹{total}.00</span>
+                        </>
+                      ) : (
+                        <span>₹{subtotal}.00</span>
+                      )}
+                    </div>
+                  ); 
+                })()}
                 <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
               </div>
             </div>
@@ -611,41 +1050,21 @@ const Checkout = () => {
               size="lg" 
               className="w-full"
               onClick={handlePayment}
-              disabled={selectedPayment === 'upi' && !upiId.trim()}
+              disabled={
+                isProcessingPayment || 
+                (selectedPayment === 'upi' && (!upiId.trim() || (upiValidationStatus && !upiValidationStatus.isValid)))
+              }
             >
-              Pay Now
+              {isProcessingPayment ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  Processing Payment...
+                </>
+              ) : (
+                'Pay Now'
+              )}
             </Button>
           </>
-        )}
-
-        {currentStep === 4 && lastOrder && (
-          <div className="p-4">
-            <div className="bg-white rounded-lg p-4 space-y-3">
-              <h3 className="text-lg font-semibold">Order Summary</h3>
-              <div className="text-sm text-gray-600">Order ID: {lastOrder.id}</div>
-              <div className="text-sm">Payment: {lastOrder.paymentMethod}</div>
-              <div className="text-sm">
-                Ship To: {lastOrder.address.fullName}, {lastOrder.address.houseNo}, {lastOrder.address.roadName}, {lastOrder.address.city}, {lastOrder.address.state} - {lastOrder.address.pincode}
-              </div>
-              <div className="divide-y">
-                {lastOrder.items.map((i) => (
-                  <div key={`${i.id}-${i.size}`} className="py-2 flex justify-between text-sm">
-                    <div>
-                      <div className="font-medium">{i.name}</div>
-                      <div className="text-gray-600">Size: {i.size} • Qty: {i.quantity}</div>
-                    </div>
-                    <div className="font-medium">₹{i.price * i.quantity}.00</div>
-                  </div>
-                ))}
-              </div>
-              <div className="flex justify-between font-semibold pt-2">
-                <span>Total</span>
-                <span>₹{lastOrder.total}.00</span>
-              </div>
-              <Button variant="outline" onClick={handleDownloadInvoice}>Download Invoice (PDF)</Button>
-              <Button variant="fashion" onClick={() => navigate('/orders')} className="w-full">Go to Orders</Button>
-            </div>
-          </div>
         )}
       </div>
     </div>
