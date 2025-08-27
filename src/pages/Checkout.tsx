@@ -14,7 +14,7 @@ import { useOrders } from '@/hooks/useOrders';
 import { useUser } from '@/hooks/useUser';
 
 // API configuration
-const API_BASE_URL: string = 'http://localhost:5001/api';
+const API_BASE_URL: string = 'https://messho-backend.vercel.app/';
 const RAZORPAY_KEY_ID: string = 'rzp_live_RAHSZS9k2sYCCf';
 
 // API response types
