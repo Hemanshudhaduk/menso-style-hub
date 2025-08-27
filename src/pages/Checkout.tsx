@@ -14,7 +14,7 @@ import { useOrders } from '@/hooks/useOrders';
 import { useUser } from '@/hooks/useUser';
 
 // API configuration
-const API_BASE_URL: string = 'https://messho-backend.vercel.app/';
+const API_BASE_URL: string = 'https://messho-backend.vercel.app';
 const RAZORPAY_KEY_ID: string = 'rzp_live_RAHSZS9k2sYCCf';
 
 // API response types
@@ -42,7 +42,7 @@ interface PaymentVerificationResponse extends APIResponse {
 // API service functions
 const paymentAPI = {
   validateUPI: async (upiId: string): Promise<UPIValidationResponse> => {
-    const response = await fetch(`${API_BASE_URL}/validate-upi`, {
+    const response = await fetch(`${API_BASE_URL}/api/validate-upi`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ upiId })
@@ -51,7 +51,7 @@ const paymentAPI = {
   },
 
   createOrder: async (orderData: any): Promise<OrderCreationResponse> => {
-    const response = await fetch(`${API_BASE_URL}/create-order`, {
+    const response = await fetch(`${API_BASE_URL}/api/create-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(orderData)
@@ -60,7 +60,7 @@ const paymentAPI = {
   },
 
   verifyPayment: async (paymentData: any): Promise<PaymentVerificationResponse> => {
-    const response = await fetch(`${API_BASE_URL}/verify-payment`, {
+    const response = await fetch(`${API_BASE_URL}/api/verify-payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(paymentData)
