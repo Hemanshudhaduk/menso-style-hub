@@ -138,7 +138,7 @@ export const products: Product[] = [
   {
     id: 5,
     name: "Sarees",
-    price: 199,
+    price: 11,
     originalPrice: 3000,
     discount: 96,
     rating: 4.8,
