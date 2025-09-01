@@ -389,7 +389,7 @@ const ProductDetail = () => {
         {recommendedProducts.length > 0 && (
           <div className="bg-white mt-2 p-4 max-w-4xl mx-auto rounded">
             <h3 className="text-lg font-semibold mb-4">Products For You</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {recommendedProducts.map((rp) => (
                 <ProductCard
                   key={rp.id}
