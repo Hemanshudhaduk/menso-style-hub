@@ -13,10 +13,14 @@ const Account = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-10">
+      {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-40">
         <div className="px-4 py-3 flex items-center justify-between">
-          <button onClick={() => navigate("/")} className="mr-3">
+          <button
+            onClick={() => navigate("/")}
+            className="mr-3 p-1 rounded hover:bg-gray-100"
+          >
             <ArrowLeft className="h-6 w-6 text-gray-600" />
           </button>
           <div className="flex items-center gap-2">
@@ -24,7 +28,7 @@ const Account = () => {
             <h1
               className="text-3xl font-extrabold lowercase tracking-tight cursor-pointer"
               style={{ color: "#6D106A" }}
-              onClick={() => navigate("/")} // 🔥 no refresh
+              onClick={() => navigate("/")}
             >
               meesho
             </h1>
@@ -44,75 +48,68 @@ const Account = () => {
 
       <main className="max-w-xl mx-auto p-4 space-y-4">
         {/* Profile Card */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <img
-                src={user.avatarDataUrl || "/favicon.ico"}
-                alt="avatar"
-                className="w-16 h-16 rounded-full object-cover border"
-              />
-              <label className="absolute -bottom-1 -right-1 bg-purple-600 text-white rounded-full p-1 cursor-pointer">
-                <UploadCloud className="w-4 h-4" />
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    const reader = new FileReader();
-                    reader.onload = () => {
-                      const newUser = {
-                        ...user!,
-                        avatarDataUrl: String(reader.result),
-                      };
-                      saveUser(newUser); // 🔥 no reload needed
+        <div className="bg-white rounded-xl p-4 shadow-md border flex items-center gap-4">
+          <div className="relative">
+            <img
+              src={user.avatarDataUrl || "/favicon.ico"}
+              alt="avatar"
+              className="w-16 h-16 rounded-full object-cover border"
+            />
+            <label className="absolute -bottom-1 -right-1 bg-purple-600 text-white rounded-full p-1 cursor-pointer hover:bg-purple-700 transition">
+              <UploadCloud className="w-4 h-4" />
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () => {
+                    const newUser = {
+                      ...user,
+                      avatarDataUrl: String(reader.result),
                     };
-                    reader.readAsDataURL(file);
-                  }}
-                />
-              </label>
+                    saveUser(newUser);
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </label>
+          </div>
+          <div>
+            <div className="text-lg font-semibold">
+              {user.firstName} {user.lastName}
             </div>
-            <div>
-              <div className="text-lg font-semibold">
-                {user.firstName} {user.lastName}
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Member since {new Date().getFullYear()}
-              </div>
+            <div className="text-xs text-muted-foreground">
+              Member since {new Date().getFullYear()}
             </div>
           </div>
         </div>
 
         {/* Details Grid */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <div className="text-xs text-muted-foreground">Email</div>
-            <div className="font-medium break-words">{user.email}</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <div className="text-xs text-muted-foreground">Mobile</div>
-            <div className="font-medium">{user.mobile}</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <div className="text-xs text-muted-foreground">State</div>
-            <div className="font-medium">{user.state}</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <div className="text-xs text-muted-foreground">City</div>
-            <div className="font-medium">{user.city}</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
-            <div className="text-xs text-muted-foreground">Pincode</div>
-            <div className="font-medium">{user.pincode}</div>
-          </div>
-          <div className="bg-white rounded-xl p-4 shadow-sm border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {[
+            { label: "Email", value: user.email },
+            { label: "Mobile", value: user.mobile },
+            { label: "State", value: user.state },
+            { label: "City", value: user.city },
+            { label: "Pincode", value: user.pincode },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="bg-white rounded-xl p-4 shadow-md border"
+            >
+              <div className="text-xs text-muted-foreground">{item.label}</div>
+              <div className="font-medium break-words">{item.value}</div>
+            </div>
+          ))}
+          <div className="bg-white rounded-xl p-4 shadow-md border flex flex-col">
             <div className="text-xs text-muted-foreground">Orders</div>
-            <div className="font-medium">View your order history</div>
+            <div className="font-medium mt-1">View your order history</div>
             <Button
-              variant="ghost"
-              className="mt-1 p-0"
+              variant="outline"
+              className="mt-2 py-1 text-sm"
               onClick={() => navigate("/orders")}
             >
               Open
@@ -121,86 +118,50 @@ const Account = () => {
         </div>
 
         {/* Quick Edit */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border">
-          <div className="font-semibold mb-2">Edit details</div>
-          <form
-            className="grid grid-cols-2 gap-3"
-            onSubmit={(e) => {
-              e.preventDefault();
-            }}
-          >
-            <input
-              className="border rounded px-3 py-2 text-sm"
-              defaultValue={user.firstName}
-              placeholder="First name"
-              id="acc-fn"
-            />
-            <input
-              className="border rounded px-3 py-2 text-sm"
-              defaultValue={user.lastName}
-              placeholder="Last name"
-              id="acc-ln"
-            />
-            <input
-              className="border rounded px-3 py-2 text-sm col-span-2"
-              defaultValue={user.email}
-              placeholder="Email"
-              id="acc-email"
-            />
-            <input
-              className="border rounded px-3 py-2 text-sm"
-              defaultValue={user.state}
-              placeholder="State"
-              id="acc-state"
-            />
-            <input
-              className="border rounded px-3 py-2 text-sm"
-              defaultValue={user.city || ""}
-              placeholder="City"
-              id="acc-city"
-            />
-            <input
-              className="border rounded px-3 py-2 text-sm"
-              defaultValue={user.pincode}
-              placeholder="Pincode"
-              id="acc-pin"
-            />
-            <input
-              className="border rounded px-3 py-2 text-sm"
-              defaultValue={user.mobile}
-              placeholder="Mobile"
-              id="acc-mobile"
-            />
+        <div className="bg-white rounded-xl p-4 shadow-md border">
+          <div className="font-semibold mb-3">Edit details</div>
+          <form className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { id: "acc-fn", placeholder: "First name", value: user.firstName },
+              { id: "acc-ln", placeholder: "Last name", value: user.lastName },
+              { id: "acc-email", placeholder: "Email", value: user.email, col: 2 },
+              { id: "acc-state", placeholder: "State", value: user.state },
+              { id: "acc-city", placeholder: "City", value: user.city || "" },
+              { id: "acc-pin", placeholder: "Pincode", value: user.pincode },
+              { id: "acc-mobile", placeholder: "Mobile", value: user.mobile },
+            ].map((field) => (
+              <input
+                key={field.id}
+                className={`border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fashion-purple ${
+                  field.col === 2 ? "sm:col-span-2" : ""
+                }`}
+                defaultValue={field.value}
+                placeholder={field.placeholder}
+                id={field.id}
+              />
+            ))}
           </form>
           <div className="flex justify-end mt-3">
             <Button
               onClick={() => {
                 const updated = {
-                  firstName: (
-                    document.getElementById("acc-fn") as HTMLInputElement
-                  ).value,
-                  lastName: (
-                    document.getElementById("acc-ln") as HTMLInputElement
-                  ).value,
-                  email: (
-                    document.getElementById("acc-email") as HTMLInputElement
-                  ).value,
-                  state: (
-                    document.getElementById("acc-state") as HTMLInputElement
-                  ).value,
-                  city: (
-                    document.getElementById("acc-city") as HTMLInputElement
-                  ).value,
-                  pincode: (
-                    document.getElementById("acc-pin") as HTMLInputElement
-                  ).value,
-                  mobile: (
-                    document.getElementById("acc-mobile") as HTMLInputElement
-                  ).value,
+                  firstName: (document.getElementById("acc-fn") as HTMLInputElement)
+                    .value,
+                  lastName: (document.getElementById("acc-ln") as HTMLInputElement)
+                    .value,
+                  email: (document.getElementById("acc-email") as HTMLInputElement)
+                    .value,
+                  state: (document.getElementById("acc-state") as HTMLInputElement)
+                    .value,
+                  city: (document.getElementById("acc-city") as HTMLInputElement)
+                    .value,
+                  pincode: (document.getElementById("acc-pin") as HTMLInputElement)
+                    .value,
+                  mobile: (document.getElementById("acc-mobile") as HTMLInputElement)
+                    .value,
                   avatarDataUrl: user?.avatarDataUrl,
-                } as any;
-
-                saveUser(updated); // 🔥 instant update, no reload
+                };
+                saveUser(updated);
               }}
             >
               Save Changes
@@ -209,14 +170,14 @@ const Account = () => {
         </div>
 
         {/* Actions */}
-        <div className="bg-white rounded-xl p-4 shadow-sm border flex items-center justify-between">
+        <div className="bg-white rounded-xl p-4 shadow-md border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <div className="font-semibold">Fast checkout</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground mt-1">
               Your profile details auto-fill the address form.
             </div>
           </div>
-          <Button variant="fashion" onClick={() => navigate("/checkout")}>
+          <Button variant="fashion" className="sm:mt-0 w-full sm:w-auto" onClick={() => navigate("/checkout")}>
             Go to Checkout
           </Button>
         </div>

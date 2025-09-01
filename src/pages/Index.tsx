@@ -124,7 +124,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20">
+    <div className="min-h-screen bg-background pb-20 px-2 sm:px-4 md:px-8">
       {/* Header */}
       <Header
         cartItemCount={getTotalItems()}
@@ -136,9 +136,8 @@ const Index = () => {
 
       {/* Slide-out Menu */}
       <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-        <SheetContent side="left" className="w-80 p-0">
+        <SheetContent side="left" className="w-full sm:w-80 p-0">
           <SheetHeader className="p-4 border-b">
-            {/* <SheetTitle>Menu</SheetTitle> */}
             <h1
               className="text-3xl font-extrabold lowercase tracking-tight cursor-pointer"
               style={{ color: "#6D106A" }}
@@ -226,19 +225,23 @@ const Index = () => {
 
       {/* Main Content */}
       <main>
-        <div className="px-4 pt-4">
+        <div className="pt-4">
           <GaneshOfferBanner />
         </div>
         {/* Categories */}
-        <CategoryGrid onCategoryClick={handleCategoryClick} />
+        <div className="mb-4">
+          <CategoryGrid onCategoryClick={handleCategoryClick} />
+        </div>
 
         {/* Banner */}
-        <Banner />
+        <div className="mb-4">
+          <Banner />
+        </div>
 
         {/* Products Section */}
-        <div className="px-0 py-2">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold px-2">
+        <div className="py-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 px-2">
+            <h3 className="text-lg font-semibold">
               {selectedCategory === "all"
                 ? "Products For You"
                 : selectedCategory === "kurtis"
@@ -248,7 +251,7 @@ const Index = () => {
                 : "Sarres"}
             </h3>
             {searchQuery && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground mt-2 sm:mt-0">
                 {filteredProducts.length} results for "{searchQuery}"
               </span>
             )}
@@ -263,7 +266,8 @@ const Index = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-1">
+            // Responsive products grid
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
