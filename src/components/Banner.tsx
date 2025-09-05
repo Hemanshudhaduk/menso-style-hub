@@ -2,17 +2,24 @@ import { Button } from '@/components/ui/button';
 
 export const Banner = () => {
   return (
-    <div className="px-4 py-2">
-      <div className="bg-gradient-hero rounded-lg p-6 text-white">
-        <h2 className="text-xl font-bold mb-1">MEGA BLOCKBUSTER SALE</h2>
-        <p className="text-sm mb-4">Up to 50% Off • Daily Refreshing Skin Care</p>
-        <Button 
-          variant="secondary" 
-          size="sm" 
-          className="bg-white text-fashion-purple px-6 rounded-full font-medium transition-all duration-200 ease-out hover:text-white hover:bg-gradient-to-r hover:from-pink-500 hover:to-purple-600 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-purple-500 hover:-translate-y-0.5"
-        >
-          SHOP NOW
-        </Button>
+    <div className="py-2">
+      <div className="relative w-full overflow-hidden rounded-lg">
+        {/* Image from public/ - replace with your asset name if different */}
+        <img
+          src="/banner-sale.webp"
+          alt="Sale Banner"
+          className="w-full h-auto block"
+          onError={(e) => {
+            // graceful fallback if image missing
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        {/* Optional CTA overlay (shown only if image loads) */}
+        <div className="absolute right-4 bottom-4">
+          <Button className="bg-white/95 text-purple-800 font-semibold rounded-xl px-4 py-1.5 text-sm shadow-md hover:bg-white transition">
+            Shop Now
+          </Button>
+        </div>
       </div>
     </div>
   );

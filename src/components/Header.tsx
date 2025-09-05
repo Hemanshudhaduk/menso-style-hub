@@ -47,18 +47,16 @@ export const Header = ({
               meesho
             </h1>
           </div>
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate(isLikesPage ? "/" : "/likes")}
             >
               <Heart
-                className={`w-6 h-6 ${
-                  likedIds.length > 0 || isLikesPage
-                    ? "text-red-500 fill-red-500"
-                    : "text-fashion-pink"
-                }`}
+                className="w-6 h-6 text-red-500"
+                fill="currentColor"
+                strokeWidth={0}
               />
             </Button>
             <Button
@@ -67,7 +65,7 @@ export const Header = ({
               className="relative"
               onClick={onCartClick}
             >
-              <ShoppingCart className="w-6 h-6 text-fashion-purple" />
+              <ShoppingCart className="w-6 h-6 text-fashion-purple" fill="currentColor" strokeWidth={0} />
               {cartItemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-gradient-secondary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                   {cartItemCount}

@@ -100,8 +100,8 @@ export interface Order {
 export interface UseCartReturn {
   cart: CartItem[];
   addToCart: (product: Product, size: string, quantity?: number) => void;
-  removeFromCart: (productId: number, size: string) => void;
-  updateQuantity: (productId: number, size: string, delta: number) => void;
+  removeFromCart: (productId: number | string, size: string) => void;
+  updateQuantity: (productId: number | string, size: string, delta: number) => void;
   clearCart: () => void;
   getTotalPrice: () => number;
   getCartCount: () => number;

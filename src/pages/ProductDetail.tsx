@@ -35,11 +35,17 @@ const ProductDetail = () => {
   // Gallery logic
   const galleryImages = product.images?.length ? product.images : [product.image];
   const recommendedLimit = product.category === "kurtis" ? 6 : 4;
-  const recommendedProducts = products
-    .filter(
+  const recommendedProducts = (() => {
+    const sameCategory = products.filter(
       (p) => p.category === product.category && String(p.id) !== String(product.id)
-    )
-    .slice(0, recommendedLimit);
+    );
+    // Shuffle randomly on each visit to detail page
+    for (let i = sameCategory.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [sameCategory[i], sameCategory[j]] = [sameCategory[j], sameCategory[i]];
+    }
+    return sameCategory.slice(0, recommendedLimit);
+  })();
 
   // Cart/Wishlist actions
   const handleAddToCart = () => {
@@ -211,10 +217,9 @@ const ProductDetail = () => {
       <main className="pb-24">
         {/* Product Images - main and thumbnails */}
         <div className="bg-white">
-          {/* Force equal height using flex, gap, and h-full on children */}
-          <div className="flex flex-col md:flex-row gap-4 md:gap-8 md:items-stretch">
-            {/* Image Gallery on Left for Desktop, Full width for Mobile */}
-            <div className="w-full md:w-1/2 flex flex-col justify-between md:h-full">
+          {/* Mobile-first single column layout inside mobile frame */}
+          <div className="flex flex-col gap-4">
+            <div className="w-full flex flex-col justify-between">
               <div className="aspect-[3/4] w-full rounded overflow-hidden bg-gray-50">
                 <img
                   src={galleryImages[selectedImageIndex]}
@@ -248,10 +253,9 @@ const ProductDetail = () => {
                 </div>
               </div>
             </div>
-            {/* Product Info on Right for Desktop, Below for Mobile */}
-            {/* Add vertical alignment and spacing improvements */}
-            <div className="w-full md:w-1/2 flex flex-col justify-between md:h-full">
-              <div className="p-4 flex flex-col justify-center h-full">
+            {/* Product Info */}
+            <div className="w-full flex flex-col justify-between">
+              <div className="p-4 flex flex-col justify-center">
                 <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
                   {product.name}
                 </h1>
@@ -312,23 +316,13 @@ const ProductDetail = () => {
                     ))}
                   </div>
                 </div>
-                {/* Main Actions for Desktop (shown below on mobile) */}
+                {/* Inline actions (visible above the fixed bar too) */}
                 <div className="flex space-x-3 mt-4">
-                  <Button
-                    variant="fashionOutline"
-                    size="lg"
-                    className="flex-1"
-                    onClick={handleAddToCart}
-                  >
+                  <Button variant="fashionOutline" size="lg" className="flex-1" onClick={handleAddToCart}>
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     Add to Cart
                   </Button>
-                  <Button
-                    variant="fashion"
-                    size="lg"
-                    className="flex-1"
-                    onClick={handleBuyNow}
-                  >
+                  <Button variant="fashion" size="lg" className="flex-1" onClick={handleBuyNow}>
                     Buy Now
                   </Button>
                 </div>
@@ -397,9 +391,9 @@ const ProductDetail = () => {
 
         {/* Recommended Products */}
         {recommendedProducts.length > 0 && (
-          <div className="bg-white mt-2 p-4 max-w-4xl mx-auto rounded">
+          <div className="bg-white mt-2 p-4 rounded">
             <h3 className="text-lg font-semibold mb-4">Products For You</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               {recommendedProducts.map((rp) => (
                 <ProductCard
                   key={rp.id}

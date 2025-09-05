@@ -44,14 +44,7 @@ const Orders = () => {
             No orders yet. Complete your first order to see it here.
           </div>
         ) : (
-          <div
-            className="
-              grid gap-4
-              sm:grid-cols-2
-              lg:grid-cols-3
-              xl:grid-cols-4
-            "
-          >
+          <div className="grid grid-cols-1 gap-4">
             {sorted.map((order) => (
               <div
                 key={order.id}

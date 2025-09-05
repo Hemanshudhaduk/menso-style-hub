@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,10 +23,7 @@ interface APIResponse {
   message: string;
 }
 
-interface UPIValidationResponse extends APIResponse {
-  // Add any additional UPI validation specific fields if needed
-  
-}
+type UPIValidationResponse = APIResponse;
 
 
 interface OrderCreationResponse extends APIResponse {
@@ -35,9 +32,7 @@ interface OrderCreationResponse extends APIResponse {
   currency: string;
 }
 
-interface PaymentVerificationResponse extends APIResponse {
-  // Add any additional verification specific fields if needed
-}
+type PaymentVerificationResponse = APIResponse;
 
 // API service functions
 const paymentAPI = {
@@ -50,7 +45,7 @@ const paymentAPI = {
     return response.json();
   },
 
-  createOrder: async (orderData: any): Promise<OrderCreationResponse> => {
+  createOrder: async (orderData: Record<string, unknown>): Promise<OrderCreationResponse> => {
     const response = await fetch(`${API_BASE_URL}/api/create-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -59,7 +54,7 @@ const paymentAPI = {
     return response.json();
   },
 
-  verifyPayment: async (paymentData: any): Promise<PaymentVerificationResponse> => {
+  verifyPayment: async (paymentData: Record<string, unknown>): Promise<PaymentVerificationResponse> => {
     const response = await fetch(`${API_BASE_URL}/api/verify-payment`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -180,6 +175,10 @@ const Checkout: React.FC = () => {
     { id: 3, name: 'Payment', completed: currentStep > 3 },
     { id: 4, name: 'Summary', completed: false }
   ];
+
+  // Removed auto-redirect to home to avoid racing when cart is still loading
+
+  // no-op: reverted deep-linking to payment
 
   const validateAddress = (addr: Address): boolean => {
     const errors: AddressErrors = {};
@@ -518,7 +517,7 @@ const Checkout: React.FC = () => {
         </div>
       </div>
 
-      <main className="pb-28 max-w-xl mx-auto">
+      <main className="pb-28 w-full max-w-[430px] mx-auto">
         {/* Step 1: Cart */}
         {currentStep === 1 && (
           <div className="p-4">
@@ -540,21 +539,21 @@ const Checkout: React.FC = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <button 
-                          onClick={() => updateQuantity(Number(item.id), item.size, -1)}
+                          onClick={() => updateQuantity(item.id, item.size, -1)}
                           className="w-8 h-8 rounded-full border flex items-center justify-center"
                         >
                           -
                         </button>
                         <span>Qty: {item.quantity.toString().padStart(2, '0')}</span>
                         <button 
-                          onClick={() => updateQuantity(Number(item.id), item.size, 1)}
+                          onClick={() => updateQuantity(item.id, item.size, 1)}
                           className="w-8 h-8 rounded-full border flex items-center justify-center"
                         >
                           +
                         </button>
                       </div>
                       <button 
-                        onClick={() => removeFromCart(Number(item.id), item.size)}
+                        onClick={() => removeFromCart(item.id, item.size)}
                         className="text-gray-400"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -969,8 +968,8 @@ const Checkout: React.FC = () => {
         )}
       </main>
 
-      {/* Fixed Bottom Actions */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4">
+      {/* Fixed Bottom Actions - constrained to mobile frame on desktop */}
+      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[430px] bg-white border-t p-4">
         {currentStep === 1 && (
           <>
             <div className="flex justify-between items-center mb-3">

@@ -1,6 +1,7 @@
-import { Star } from "lucide-react";
+import { Star, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Product } from "@/types";
+import { useWishlist } from "@/hooks/useWishlist";
 
 interface ProductCardProps {
   product: Product;
@@ -13,17 +14,33 @@ export const ProductCard = ({
   onProductClick,
   onAddToCart,
 }: ProductCardProps) => {
+  const { isLiked, toggleLike } = useWishlist();
   return (
     <div
       className="bg-card rounded-lg shadow-sm hover:shadow-lg transition-all duration-200 cursor-pointer transform hover:-translate-y-1 flex flex-col h-full"
       onClick={() => onProductClick(product)}
     >
       {/* Image Part: unchanged */}
-      <img
-        src={product.image}
-        alt={product.name}
-        className="w-full aspect-[3/4] object-cover rounded-t-lg"
-      />
+      <div className="relative">
+        <img
+          src={product.image}
+          alt={product.name}
+          className="w-full aspect-[3/4] object-cover rounded-t-lg"
+        />
+        <button
+          aria-label="Toggle like"
+          className="absolute top-2 right-2 rounded-full bg-white/90 p-1 shadow"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleLike(Number(product.id));
+          }}
+        >
+          <Heart
+            className={`w-5 h-5 ${isLiked(Number(product.id)) ? "text-red-500" : "text-fashion-pink"}`}
+            fill={isLiked(Number(product.id)) ? "currentColor" : "none"}
+          />
+        </button>
+      </div>
       <div className="p-3 flex flex-col flex-1">
         {/* Product Name */}
         <h3

@@ -18,7 +18,7 @@ export const useCart = () => {
   }, [cart]);
 
   const addToCart = (product: Product, size: string = 'S') => {
-    const existingItem = cart.find(item => item.id === product.id && item.size === size);
+    const existingItem = cart.find(item => String(item.id) === String(product.id) && item.size === size);
     
     if (existingItem) {
       setCart(cart.map(item =>
@@ -31,13 +31,13 @@ export const useCart = () => {
     }
   };
 
-  const removeFromCart = (productId: number, size: string) => {
-    setCart(cart.filter(item => !(item.id === productId && item.size === size)));
+  const removeFromCart = (productId: number | string, size: string) => {
+    setCart(cart.filter(item => !(String(item.id) === String(productId) && item.size === size)));
   };
 
-  const updateQuantity = (productId: number, size: string, change: number) => {
+  const updateQuantity = (productId: number | string, size: string, change: number) => {
     setCart(cart.map(item => {
-      if (item.id === productId && item.size === size) {
+      if (String(item.id) === String(productId) && item.size === size) {
         const newQuantity = item.quantity + change;
         return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
       }

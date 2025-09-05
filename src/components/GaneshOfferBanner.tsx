@@ -12,7 +12,7 @@ export const GaneshOfferBanner = ({ className }: GaneshOfferBannerProps) => {
       <div className="relative flex items-center gap-3">
         <Sparkles className="w-6 h-6" />
         <div>
-          <div className="text-sm uppercase tracking-wide">Ganesh Special Offer</div>
+          <div className="text-sm uppercase tracking-wide"> Special Offer</div>
           <div className="text-lg font-semibold leading-tight">Buy 3+ items and get 30% OFF on the whole bill</div>
           <div className="text-xs text-white/90">Auto-applied at checkout • Limited time</div>
         </div>

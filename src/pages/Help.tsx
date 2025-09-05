@@ -25,7 +25,7 @@ const Help = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-xl mx-auto p-4 space-y-6 pb-24">
+      <main className="p-4 space-y-6 pb-24">
         {/* FAQ Section */}
         <section className="bg-white rounded-xl p-4 shadow-sm">
           <h3 className="text-lg font-semibold mb-3">❓ Frequently Asked Questions</h3>

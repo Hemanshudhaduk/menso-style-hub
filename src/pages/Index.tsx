@@ -10,6 +10,7 @@ import { Notification } from "@/components/ui/notification";
 import { GaneshOfferBanner } from "@/components/GaneshOfferBanner";
 import { useCart } from "@/hooks/useCart";
 import { products } from "@/data/products";
+import { shuffleArrayImmutable } from "@/lib/utils";
 import { Product, PageType } from "@/types";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -27,6 +28,11 @@ import {
   User,
   Grid2X2,
   CreditCard,
+  MapPin,
+  ChevronRight,
+  SlidersHorizontal,
+  ChevronDown,
+  Filter as FilterIcon,
 } from "lucide-react";
 import { useUser } from "@/hooks/useUser";
 
@@ -35,6 +41,9 @@ const Index = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activePage, setActivePage] = useState<PageType>("home");
+  const [sortOrder, setSortOrder] = useState<"relevance" | "priceAsc" | "priceDesc" | "rating">("relevance");
+  const [gender, setGender] = useState<"all" | "women">("all");
+  const [openMenu, setOpenMenu] = useState<"sort" | "category" | "gender" | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [notification, setNotification] = useState({
@@ -66,6 +75,12 @@ const Index = () => {
       );
     }
 
+    // Filter by gender (simple mapping: kurtis/combo2/combo3 -> women)
+    if (gender !== "all") {
+      const womenCategories = new Set(["kurtis", "combo2", "combo3"]);
+      filtered = filtered.filter((p) => womenCategories.has(p.category));
+    }
+
     // Filter by search query
     if (searchQuery.trim()) {
       filtered = filtered.filter(
@@ -75,8 +90,26 @@ const Index = () => {
       );
     }
 
+    // Sort
+    if (sortOrder === "priceAsc") {
+      filtered = filtered.slice().sort((a, b) => a.price - b.price);
+    } else if (sortOrder === "priceDesc") {
+      filtered = filtered.slice().sort((a, b) => b.price - a.price);
+    } else if (sortOrder === "rating") {
+      filtered = filtered.slice().sort((a, b) => b.rating - a.rating);
+    }
+
+    // Default random ordering when relevance selected or no sort
+    if (sortOrder === "relevance") {
+      // Seed by day to keep order stable for a session; change daily
+      const daySeed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+      filtered = shuffleArrayImmutable(filtered, daySeed);
+    }
+
     return filtered;
-  }, [searchQuery, selectedCategory]);
+  }, [searchQuery, selectedCategory, sortOrder, gender]);
+
+  // include sortOrder and gender in memo deps
 
   const handleAddToCart = (product: Product) => {
     if (!user) {
@@ -124,7 +157,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-20 px-2 sm:px-4 md:px-8">
+    <div className="min-h-screen bg-background bg-white pb-20">
       {/* Header */}
       <Header
         cartItemCount={getTotalItems()}
@@ -225,9 +258,20 @@ const Index = () => {
 
       {/* Main Content */}
       <main>
-        <div className="pt-4">
-          <GaneshOfferBanner />
+        {/* Location notice */}
+        <div className="w-full bg-white border-y mb-3">
+          <div className="flex items-center gap-2 px-3 py-3 text-sm">
+            <MapPin className="w-4 h-4 text-fashion-purple" />
+            <span className="text-gray-700 flex-1">
+              Add delivery location to check extra discount
+            </span>
+            <ChevronRight className="w-4 h-4 text-gray-400" />
+            {/* <ChevronRight className="w-4 h-4 text-gray-400 -ml-2" /> */}
+          </div>
         </div>
+        {/* <div className="pt-4">
+          <GaneshOfferBanner />
+        </div> */}
         {/* Categories */}
         <div className="mb-4">
           <CategoryGrid onCategoryClick={handleCategoryClick} />
@@ -240,7 +284,7 @@ const Index = () => {
 
         {/* Products Section */}
         <div className="py-2">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 px-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">
               {selectedCategory === "all"
                 ? "Products For You"
@@ -257,6 +301,69 @@ const Index = () => {
             )}
           </div>
 
+          {/* Filter toolbar */}
+          <div className="grid grid-cols-4 gap-2 mb-3 relative">
+            <button className="flex items-center justify-center gap-1 py-2 text-sm bg-white border rounded" onClick={() => setOpenMenu(openMenu === 'sort' ? null : 'sort')}>
+              <SlidersHorizontal className="w-4 h-4" />
+              Sort
+            </button>
+            <button className="flex items-center justify-center gap-1 py-2 text-sm bg-white border rounded" onClick={() => setOpenMenu(openMenu === 'category' ? null : 'category')}>
+              Category
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            <button className="flex items-center justify-center gap-1 py-2 text-sm bg-white border rounded" onClick={() => setOpenMenu(openMenu === 'gender' ? null : 'gender')}>
+              Gender
+              <ChevronDown className="w-4 h-4" />
+            </button>
+            <button className="flex items-center justify-center gap-1 py-2 text-sm bg-white border rounded">
+              <FilterIcon className="w-4 h-4" />
+              Filters
+            </button>
+
+            {openMenu === 'sort' && (
+              <div className="absolute z-20 top-12 left-0 w-full bg-white border rounded shadow">
+                {[
+                  { id: 'relevance', label: 'Relevance' },
+                  { id: 'priceAsc', label: 'Price: Low to High' },
+                  { id: 'priceDesc', label: 'Price: High to Low' },
+                  { id: 'rating', label: 'Top Rated' },
+                ].map((o) => (
+                  <button key={o.id} className={`w-full text-left px-3 py-2 text-sm ${sortOrder === o.id ? 'bg-gray-100' : ''}`} onClick={() => { setSortOrder(o.id as "relevance" | "priceAsc" | "priceDesc" | "rating"); setOpenMenu(null); }}>
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {openMenu === 'category' && (
+              <div className="absolute z-20 top-12 left-0 w-full bg-white border rounded shadow grid grid-cols-2">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'kurtis', label: 'Kurtis' },
+                  { id: 'combo2', label: 'Kurti 2 Combo' },
+                  { id: 'combo3', label: 'Sarees' },
+                ].map((c) => (
+                  <button key={c.id} className={`text-left px-3 py-2 text-sm ${selectedCategory === c.id ? 'bg-gray-100' : ''}`} onClick={() => { setSelectedCategory(c.id); setOpenMenu(null); }}>
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {openMenu === 'gender' && (
+              <div className="absolute z-20 top-12 left-0 w-full bg-white border rounded shadow">
+                {[
+                  { id: 'all', label: 'All' },
+                  { id: 'women', label: 'Women' },
+                ].map((g) => (
+                  <button key={g.id} className={`w-full text-left px-3 py-2 text-sm ${gender === g.id ? 'bg-gray-100' : ''}`} onClick={() => { setGender(g.id as "all" | "women"); setOpenMenu(null); }}>
+                    {g.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           {filteredProducts.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
@@ -266,8 +373,8 @@ const Index = () => {
               </p>
             </div>
           ) : (
-            // Responsive products grid
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            // Force 2-column grid across all viewports
+            <div className="grid grid-cols-2 gap-1">
               {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}

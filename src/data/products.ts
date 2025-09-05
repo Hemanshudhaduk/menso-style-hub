@@ -1004,27 +1004,31 @@ export const categories = [
     name: 'Categories',
     icon: 'Grid3X3',
     bgColor: 'bg-fashion-pink/10',
-    iconColor: 'text-fashion-pink'
+    iconColor: 'text-fashion-pink',
+    image: '/cat-all.svg'
   },
   {
     id: 'kurtis',
     name: 'Kurtis',
     icon: 'Shirt',
     bgColor: 'bg-blue-100',
-    iconColor: 'text-blue-500'
+    iconColor: 'text-blue-500',
+    image: '/cat-kurtis.svg'
   },
   {
     id: 'combo2',
     name: 'Kurti 2 Com...',
     icon: 'Layers',
     bgColor: 'bg-green-100',
-    iconColor: 'text-green-500'
+    iconColor: 'text-green-500',
+    image: '/cat-combo.svg'
   },
   {
     id: 'combo3',
     name: 'Sarees',
     icon: 'Package',
     bgColor: 'bg-yellow-100',
-    iconColor: 'text-yellow-500'
+    iconColor: 'text-yellow-500',
+    image: '/cat-sarees.svg'
   }
 ];

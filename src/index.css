@@ -143,6 +143,7 @@
 html, body {
   width: 100%;
   overflow-x: hidden;
+  min-height: 100dvh;
 }
 
 /* Media elements should not overflow viewport width */
@@ -156,4 +157,10 @@ img, video, canvas {
 * {
   box-sizing: border-box;
   word-wrap: break-word;
+}
+
+/* Centered mobile frame on desktop */
+#root {
+  display: flex;
+  justify-content: center;
 }

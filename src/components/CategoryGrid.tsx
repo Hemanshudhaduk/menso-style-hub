@@ -1,4 +1,3 @@
-import { Grid3X3, Shirt, Layers, Package } from 'lucide-react';
 import { categories } from '@/data/products';
 import { cn } from '@/lib/utils';
 
@@ -6,30 +5,27 @@ interface CategoryGridProps {
   onCategoryClick: (categoryId: string) => void;
 }
 
-const iconMap = {
-  Grid3X3,
-  Shirt,
-  Layers,
-  Package
-};
+// Optional mapping if some categories still want icons; otherwise use images
+const iconMap: Record<string, string> = {};
 
 export const CategoryGrid = ({ onCategoryClick }: CategoryGridProps) => {
   return (
-    <div className="bg-card px-4 py-4">
-      <div className="flex justify-around">
+    <div className="bg-card px-2 py-3">
+      <div className="flex justify-between gap-2">
         {categories.map((category) => {
-          const Icon = iconMap[category.icon as keyof typeof iconMap];
+          const imageSrc = (category as any).image as string | undefined;
           return (
             <div
               key={category.id}
               className="text-center cursor-pointer transform hover:scale-105 transition-transform duration-200"
               onClick={() => onCategoryClick(category.id)}
             >
-              <div className={cn(
-                "w-16 h-16 rounded-lg flex items-center justify-center mb-2",
-                category.bgColor
-              )}>
-                <Icon className={cn("w-8 h-8", category.iconColor)} />
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-white border mb-2 mx-auto">
+                {imageSrc ? (
+                  <img src={imageSrc} alt={category.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className={cn("w-full h-full flex items-center justify-center", category.bgColor)} />
+                )}
               </div>
               <span className="text-sm font-medium text-foreground">{category.name}</span>
             </div>
