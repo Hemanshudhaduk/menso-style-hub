@@ -27,6 +27,7 @@ export interface Product {
   care: string;
   shipping: string;
   details?: {
+    ProductDetails?: string[];
     kurta?: string[];
     pants?: string[];
     dupatta?: string[];

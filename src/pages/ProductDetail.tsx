@@ -363,6 +363,16 @@ const ProductDetail = () => {
               </ul>
             </div>
           )}
+          {product.details?.ProductDetails?.length > 0 && (
+            <div className="mt-6">
+              {/* <h4 className="font-semibold mb-3">ProductDetails:</h4> */}
+              <ul className="space-y-1 text-sm text-gray-600">
+                {product.details.ProductDetails.map((text, idx) => (
+                  <li key={idx}>• {text}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           {product.details?.pants?.length > 0 && (
             <div className="mt-4">
               <h4 className="font-semibold mb-3">Pants:</h4>

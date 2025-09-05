@@ -119,6 +119,20 @@ import mpzxj3 from '@/assets/8mpzxj/8mpzxj_3.avif';
 import mpzxj4 from '@/assets/8mpzxj/8mpzxj_4.webp';
 
 
+// saries
+
+import bqyk_1 from '@/assets/88bqyk/88bqyk_1.avif'
+import bqyk_2 from '@/assets/88bqyk/88bqyk_2.webp'
+import bqyk_3 from '@/assets/88bqyk/88bqyk_3.avif'
+import bqyk_4 from '@/assets/88bqyk/88bqyk_4.avif'
+
+
+import bhz0_1 from '@/assets/11bhz0/11bhz0_1.webp';
+import bhz0_2 from '@/assets/11bhz0/11bhz0_2.webp';
+import bhz0_3 from '@/assets/11bhz0/11bhz0_3.avif';
+import bhz0_4 from '@/assets/11bhz0/11bhz0_4.avif';
+
+
 
 
 export const products: Product[] = [
@@ -906,6 +920,80 @@ export const products: Product[] = [
       dupatta: []
     }
   },
+
+
+
+// Saries
+  {
+    id: "88bqyk",
+    name: "cotton silk jacquard saree with unstitched blouse",
+    price: 199,
+    originalPrice: 600,
+    discount: 66,
+    rating: 4.4,
+    reviews: 3495,
+    image: bqyk_1,
+    images: [bqyk_1,bqyk_2,bqyk_3,bqyk_4],
+    category: "combo3",
+    sizes: ["Free Size"],
+    description: "Chitrarekha Attractive Women KurtI DUPATTA.",
+    fabric: "Cotton Silk",
+    care: "Hand Wash",
+    shipping: "5-7 Days",
+    details: {
+      ProductDetails: [
+        "Saree Fabric - Cotton Silk",
+        "Blouse - Running Blouse",
+        "Blouse Fabric - Cotton Silk",  
+        "Pattern - Zari Woven",
+        "Blouse Pattern - Same as Border",
+        "Net Quantity (N) - Single",
+        "Material - Premium-quality silk with a smooth, lustrous texture.", 
+        "Design - Elegant cream body adorned with intricate maroon woven patterns.",
+        "Blouse Piece - Comes with a matching blouse piece to complete the ensemble.",
+        "Occasion - Ideal for weddings, festive celebrations, and traditional events.",
+        "Style - A timeless design that blends cultural heritage with modern sophistication.",
+        "Comfort - Lightweight and easy to drape, ensuring all-day comfort.",
+        "Sizes  - Free Size (Saree Length Size : 6.1 m, Blouse Length Size: 0.9 m)"
+      ],
+      pants: [],
+      dupatta: []
+    }
+  },
+  {
+    id: "11bhz0",
+    name: "EROAD SILK",
+    price: 199,
+    originalPrice: 600,
+    discount: 66,
+    rating: 4.0,
+    reviews: 3495,
+    image: bhz0_1,
+    images: [bhz0_1,bhz0_2,bhz0_3,bhz0_4],
+    category: "combo3",
+    sizes: ["Free Size"],
+    description: "Chitrarekha Attractive Women KurtI DUPATTA.",
+    fabric: "Cotton Silk",
+    care: "Hand Wash",
+    shipping: "5-7 Days",
+    details: {
+      ProductDetails: [
+        "Saree Fabric - Cotton Silk",
+        "Blouse - Running Blouse",
+        "Blouse Fabric - Cotton Silk",  
+        "Pattern - Zari Woven",
+        "Blouse Pattern - Embellished",
+        "Net Quantity (N) - Single",
+        "Saree - Eroad silk Blouse - Banglori Silk",
+        "Sizes  - Free Size (Saree Length Size : 6.1 m, Blouse Length Size: 0.9 m)"
+      ],
+      pants: [],
+      dupatta: []
+    }
+  },
+
+
+
   
 ];
 
