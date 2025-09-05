@@ -227,13 +227,14 @@ const Checkout: React.FC = () => {
   };
 
   const handleUPIChange = (value: string): void => {
-    setUpiId(value);
+    const sanitized = value.replace(/\s+/g, '');
+    setUpiId(sanitized);
     // Debounce validation
     if (window.upiValidationTimeout) {
       clearTimeout(window.upiValidationTimeout);
     }
     window.upiValidationTimeout = setTimeout(() => {
-      handleUPIValidation(value);
+      handleUPIValidation(sanitized);
     }, 500);
   };
 
@@ -263,7 +264,8 @@ const Checkout: React.FC = () => {
 
   const handlePayment = async (): Promise<void> => {
     if (selectedPayment === 'upi') {
-      if (!upiId.trim()) {
+      const upiClean = upiId.replace(/\s+/g, '');
+      if (!upiClean) {
         toast({ title: 'Enter UPI ID', description: 'Please provide your UPI ID to continue.' });
         return;
       }
@@ -288,10 +290,11 @@ const Checkout: React.FC = () => {
       const amountInPaisa = total * 100; // Convert to paisa
 
       // Create order
+      const upiClean = upiId.replace(/\s+/g, '');
       const orderData = {
         amount: amountInPaisa,
         currency: 'INR',
-        upiId: upiId,
+        upiId: upiClean,
         paymentMethod: selectedUpiProvider,
         customerDetails: {
           name: address.fullName,
@@ -322,7 +325,7 @@ const Checkout: React.FC = () => {
         },
         notes: {
           address: `${address.houseNo}, ${address.roadName}, ${address.city}`,
-          upi_id: upiId
+          upi_id: upiClean
         },
         theme: {
           color: '#8B5CF6'
