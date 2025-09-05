@@ -19,34 +19,44 @@ export const useCart = () => {
 
   const addToCart = (product: Product, size: string = 'S') => {
     const existingItem = cart.find(item => String(item.id) === String(product.id) && item.size === size);
-    
+    let next: CartItem[];
     if (existingItem) {
-      setCart(cart.map(item =>
-        item.id === product.id && item.size === size
+      next = cart.map(item =>
+        String(item.id) === String(product.id) && item.size === size
           ? { ...item, quantity: item.quantity + 1 }
           : item
-      ));
+      );
     } else {
-      setCart([...cart, { ...product, size, quantity: 1 }]);
+      next = [...cart, { ...product, size, quantity: 1 }];
     }
+    setCart(next);
+    // Synchronous persistence to avoid race when navigating immediately to checkout
+    localStorage.setItem('menso-cart', JSON.stringify(next));
   };
 
   const removeFromCart = (productId: number | string, size: string) => {
-    setCart(cart.filter(item => !(String(item.id) === String(productId) && item.size === size)));
+    const next = cart.filter(item => !(String(item.id) === String(productId) && item.size === size));
+    setCart(next);
+    localStorage.setItem('menso-cart', JSON.stringify(next));
   };
 
   const updateQuantity = (productId: number | string, size: string, change: number) => {
-    setCart(cart.map(item => {
-      if (String(item.id) === String(productId) && item.size === size) {
-        const newQuantity = item.quantity + change;
-        return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
-      }
-      return item;
-    }).filter(item => item.quantity > 0));
+    const next = cart
+      .map(item => {
+        if (String(item.id) === String(productId) && item.size === size) {
+          const newQuantity = item.quantity + change;
+          return newQuantity > 0 ? { ...item, quantity: newQuantity } : item;
+        }
+        return item;
+      })
+      .filter(item => item.quantity > 0);
+    setCart(next);
+    localStorage.setItem('menso-cart', JSON.stringify(next));
   };
 
   const clearCart = () => {
     setCart([]);
+    localStorage.setItem('menso-cart', JSON.stringify([]));
   };
 
   const getTotalItems = () => {
