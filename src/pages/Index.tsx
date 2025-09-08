@@ -339,9 +339,9 @@ const Index = () => {
               <div className="absolute z-20 top-12 left-0 w-full bg-white border rounded shadow grid grid-cols-2">
                 {[
                   { id: 'all', label: 'All' },
-                  { id: 'kurtis', label: 'Kurtis' },
-                  { id: 'combo2', label: 'Kurti 2 Combo' },
-                  { id: 'combo3', label: 'Sarees' },
+                  { id: 'kurtis', label: 'Western Dresses' },
+                  { id: 'combo2', label: 'Menswear' },
+                  { id: 'combo3', label: 'Ethnic wear' },
                 ].map((c) => (
                   <button key={c.id} className={`text-left px-3 py-2 text-sm ${selectedCategory === c.id ? 'bg-gray-100' : ''}`} onClick={() => { setSelectedCategory(c.id); setOpenMenu(null); }}>
                     {c.label}
@@ -355,6 +355,7 @@ const Index = () => {
                 {[
                   { id: 'all', label: 'All' },
                   { id: 'women', label: 'Women' },
+                  { id: 'men', label: 'men' },  
                 ].map((g) => (
                   <button key={g.id} className={`w-full text-left px-3 py-2 text-sm ${gender === g.id ? 'bg-gray-100' : ''}`} onClick={() => { setGender(g.id as "all" | "women"); setOpenMenu(null); }}>
                     {g.label}

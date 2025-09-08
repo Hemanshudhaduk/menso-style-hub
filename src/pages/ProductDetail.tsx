@@ -349,7 +349,7 @@ const ProductDetail = () => {
           </div>
           {product.details?.kurta?.length > 0 && (
             <div className="mt-6">
-              <h4 className="font-semibold mb-3">Kurta:</h4>
+              {/* <h4 className="font-semibold mb-3">Kurta:</h4> */}
               <ul className="space-y-1 text-sm text-gray-600">
                 {product.details.kurta.map((text, idx) => (
                   <li key={idx}>• {text}</li>

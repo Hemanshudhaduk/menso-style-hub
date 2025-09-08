@@ -132,6 +132,115 @@ import bhz0_2 from '@/assets/11bhz0/11bhz0_2.webp';
 import bhz0_3 from '@/assets/11bhz0/11bhz0_3.avif';
 import bhz0_4 from '@/assets/11bhz0/11bhz0_4.avif';
 
+import glm0_1 from '@/assets/82glm0/82glm0_1.webp';
+import glm0_2 from '@/assets/82glm0/82glm0_2.webp';
+import glm0_3 from '@/assets/82glm0/82glm0_3.avif';
+import glm0_4 from '@/assets/82glm0/82glm0_4.avif';
+
+import h3oo_1 from '@/assets/90h3oo/90h3oo_1.avif';
+import h3oo_2 from '@/assets/90h3oo/90h3oo_2.webp';
+import h3oo_3 from '@/assets/90h3oo/90h3oo_3.avif';
+import h3oo_4 from '@/assets/90h3oo/90h3oo_4.avif';
+
+import x0pi5 from '@/assets/7x0pi5_1.webp';
+
+import svggo_1 from '@/assets/6svggo/6svggo_1.webp';
+import svggo_2 from '@/assets/6svggo/6svggo_2.webp';
+import svggo_3 from '@/assets/6svggo/6svggo_3.webp';
+import svggo_4 from '@/assets/6svggo/6svggo_4.webp';
+
+import fp46_1 from '@/assets/67fp46/67fp46_1.webp';
+import fp46_2 from '@/assets/67fp46/67fp46_2.webp';
+import fp46_3 from '@/assets/67fp46/67fp46_3.avif';
+import fp46_4 from '@/assets/67fp46/67fp46_4.avif';
+
+import k8c84_1 from '@/assets/7k8c84/7k8c84_1.webp';
+import k8c84_2 from '@/assets/7k8c84/7k8c84_2.avif';
+import k8c84_3 from '@/assets/7k8c84/7k8c84_3.webp';
+import k8c84_4 from '@/assets/7k8c84/7k8c84_4.webp';
+
+import i0e3j_1 from '@/assets/6i0e3j/6i0e3j_1.avif';
+import i0e3j_2 from '@/assets/6i0e3j/6i0e3j_2.avif';
+import i0e3j_3 from '@/assets/6i0e3j/6i0e3j_3.avif';
+import i0e3j_4 from '@/assets/6i0e3j/6i0e3j_4.avif';
+
+import lxnug_1 from '@/assets/lxnug/lxnug_1.webp';
+import lxnug_2 from '@/assets/lxnug/lxnug_2.webp';
+import lxnug_3 from '@/assets/lxnug/lxnug_3.avif';
+import lxnug_4 from '@/assets/lxnug/lxnug_4.avif';
+
+import ky2ve_1 from '@/assets/7ky2ve/7ky2ve_1.avif';
+import ky2ve_2 from '@/assets/7ky2ve/7ky2ve_2.avif';
+import ky2ve_3 from '@/assets/7ky2ve/7ky2ve_3.avif';
+import ky2ve_4 from '@/assets/7ky2ve/7ky2ve_4.avif';
+
+import md_1 from '@/assets/8mdshh/8mdshh_1.avif';
+import md_2 from '@/assets/8mdshh/8mdshh_2.avif';
+import md_3 from '@/assets/8mdshh/8mdshh_3.avif';
+import md_4 from '@/assets/8mdshh/8mdshh_4.avif';
+
+import m7bhh_1 from '@/assets/2m7bhh/2m7bhh_1.avif';
+import m7bhh_2 from '@/assets/2m7bhh/2m7bhh_2.avif';
+import m7bhh_3 from '@/assets/2m7bhh/2m7bhh_3.avif';
+import m7bhh_4 from '@/assets/2m7bhh/2m7bhh_4.avif';
+
+import xx48r_1 from '@/assets/6xx48r/6xx48r_1.avif';
+import xx48r_2 from '@/assets/6xx48r/6xx48r_2.avif';
+import xx48r_3 from '@/assets/6xx48r/6xx48r_3.avif';
+import xx48r_4 from '@/assets/6xx48r/6xx48r_4.avif';
+
+import qyv_1 from '@/assets/915qyv/915qyv_1.avif';
+import qyv_2 from '@/assets/915qyv/915qyv_2.avif';
+import qyv_3 from '@/assets/915qyv/915qyv_3.avif';
+import qyv_4 from '@/assets/915qyv/915qyv_4.avif';
+
+import heef0_1 from '@/assets/3heef0/3heef0_1.avif';
+import heef0_2 from '@/assets/3heef0/3heef0_2.avif';
+import heef0_3 from '@/assets/3heef0/3heef0_3.avif';
+import heef0_4 from '@/assets/3heef0/3heef0_4.avif';
+
+import gvcg_1 from '@/assets/52gvcg/52gvcg_1.avif';
+import gvcg_2 from '@/assets/52gvcg/52gvcg_2.avif';
+import gvcg_3 from '@/assets/52gvcg/52gvcg_3.avif';
+import gvcg_4 from '@/assets/52gvcg/52gvcg_4.avif';
+
+import vuqma_1 from '@/assets/8vuqma/8vuqma_1.avif';
+import vuqma_2 from '@/assets/8vuqma/8vuqma_2.avif';
+import vuqma_3 from '@/assets/8vuqma/8vuqma_3.avif';
+import vuqma_4 from '@/assets/8vuqma/8vuqma_4.avif';
+
+import svux5_1 from '@/assets/7svux5/7svux5_1.avif';
+import svux5_2 from '@/assets/7svux5/7svux5_2.avif';
+import svux5_3 from '@/assets/7svux5/7svux5_3.avif';
+import svux5_4 from '@/assets/7svux5/7svux5_4.avif';
+
+import s0zru_1 from '@/assets/7s0zru/7s0zru_1.avif';
+import s0zru_2 from '@/assets/7s0zru/7s0zru_2.avif';
+import s0zru_3 from '@/assets/7s0zru/7s0zru_3.avif';
+import s0zru_4 from '@/assets/7s0zru/7s0zru_4.avif';
+
+
+import dk1it_1 from '@/assets/5dk1it/5dk1it_1.avif';
+import dk1it_2 from '@/assets/5dk1it/5dk1it_2.avif';
+import dk1it_3 from '@/assets/5dk1it/5dk1it_3.avif';
+import dk1it_4 from '@/assets/5dk1it/5dk1it_4.avif';
+
+import rx562_1 from '@/assets/5rx562/5rx562_1.avif';
+import rx562_2 from '@/assets/5rx562/5rx562_2.avif';
+import rx562_3 from '@/assets/5rx562/5rx562_3.avif';
+import rx562_4 from '@/assets/5rx562/5rx562_4.avif';
+
+import kdjln_1 from '@/assets/8kdjln/8kdjln_1.avif';
+import kdjln_2 from '@/assets/8kdjln/8kdjln_2.avif';
+import kdjln_3 from '@/assets/8kdjln/8kdjln_3.avif';
+import kdjln_4 from '@/assets/8kdjln/8kdjln_4.avif';
+
+
+import q25ko_1 from '@/assets/7q25ko/7q25ko_1.avif';
+import q25ko_2 from '@/assets/7q25ko/7q25ko_2.avif';
+import q25ko_3 from '@/assets/7q25ko/7q25ko_3.avif';
+import q25ko_4 from '@/assets/7q25ko/7q25ko_4.avif';
+
 
 
 
@@ -991,6 +1100,734 @@ export const products: Product[] = [
       dupatta: []
     }
   },
+  {
+  "id": "82glm0",
+  "name": "New Design Saree",
+  "price": 99,
+  "originalPrice": 799,
+  "discount": 69,
+  "rating": 4.2,
+  "reviews": 1825,
+  "image": glm0_1,
+  "images": [glm0_1, glm0_2, glm0_3, glm0_4],
+  "category": "combo3",
+  "sizes": ["Free Size"],
+  "description": "Elegant New Design Saree crafted in chiffon with zari pattern and matching blouse piece.",
+  "fabric": "Chiffon",
+  "care": "Dry Clean Only",
+  "shipping": "5-7 Days",
+  "details": {
+    "ProductDetails": [
+      "Saree Fabric - Chiffon",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Chiffon",
+      "Pattern - Zari Woven",
+      "Blouse Pattern - Embellished",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.3 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    "pants": [],
+    "dupatta": []
+  }
+  },
+  {
+  id: "90h3oo",
+  name: "Banarasi Silk Saree with Golden Zari Border",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.3,
+  reviews: 2140,
+  image: h3oo_1,
+  images: [h3oo_1, h3oo_2, h3oo_3, h3oo_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Traditional Banarasi Silk Saree adorned with an elegant golden zari border and matching blouse piece.",
+  fabric: "Silk",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Silk",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Cotton",
+      "Pattern - Zari Woven",
+      "Blouse Pattern - Embellished",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.9 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "7x0pi5",
+  name: "Brassa Net Saree",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.1,
+  reviews: 1560,
+  image: x0pi5,
+  images: [x0pi5],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Stylish Brassa Net Saree with a lightweight drape and matching blouse piece.",
+  fabric: "Net",
+  care: "Hand Wash",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Net",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Net",
+      "Pattern - Embroidered",
+      "Blouse Pattern - Designer",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "6svggo",
+  name: "Chiffon Flower Saree With Pipping",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.2,
+  reviews: 1740,
+  image: svggo_1,
+  images: [svggo_1, svggo_2, svggo_3, svggo_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Beautiful Chiffon Flower Saree with elegant piping design and matching blouse piece.",
+  fabric: "Chiffon",
+  care: "Hand Wash",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Chiffon",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Chiffon",
+      "Pattern - Printed",
+      "Blouse Pattern - Solid",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "67fp46",
+  name: "Best Silk Printed Daily Wear Saree",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.0,
+  reviews: 1395,
+  image: fp46_1,
+  images: [fp46_1, fp46_2, fp46_3, fp46_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Lightweight and stylish silk-printed saree, perfect for daily wear with a matching blouse piece.",
+  fabric: "Chiffon",
+  care: "Hand Wash",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Chiffon",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Chiffon",
+      "Pattern - Printed",
+      "Blouse Pattern - Solid",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "7k8c84",
+  name: "Women's Georgette Saree with Embroidered Blouse Piece",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.3,
+  reviews: 2015,
+  image: k8c84_1,
+  images: [k8c84_1, k8c84_2, k8c84_3, k8c84_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Elegant women's georgette saree paired with a beautifully embroidered blouse piece, perfect for festive and casual occasions.",
+  fabric: "Georgette",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Georgette",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Georgette",
+      "Pattern - Embroidered",
+      "Blouse Pattern - Embroidered",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "6i0e3j14_BG",
+  name: "Litchi Silk Saree with Woven Design",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.2,
+  reviews: 1785,
+  image: i0e3j_1,
+  images: [i0e3j_1, i0e3j_2, i0e3j_3, i0e3j_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Elegant Litchi Silk Saree with traditional woven design, paired with a running blouse piece.",
+  fabric: "Silk",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Litchi Silk",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Silk",
+      "Pattern - Woven Design",
+      "Blouse Pattern - Solid",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.3 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "lxnug",
+  name: "Silk White Saree With Blouse",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.1,
+  reviews: 1520,
+  image: lxnug_1,
+  images: [lxnug_1, lxnug_2, lxnug_3, lxnug_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Classic white silk saree crafted from khadi silk, paired with a separate blouse piece for an elegant traditional look.",
+  fabric: "Khadi Silk",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Khadi Silk",
+      "Blouse - Separate Blouse Piece",
+      "Blouse Fabric - Silk",
+      "Pattern - Printed",
+      "Blouse Pattern - Solid",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "7ky2ve",
+  name: "Banarasi Silk Saree New Collection 2024 Party Wear",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.3,
+  reviews: 1965,
+  image: ky2ve_1,
+  images: [ky2ve_1, ky2ve_2, ky2ve_3, ky2ve_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Exclusive Banarasi silk saree from the 2024 new collection, designed for party wear with elegant woven detailing.",
+  fabric: "Banarasi Silk",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Banarasi Silk",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Silk",
+      "Pattern - Woven Design",
+      "Blouse Pattern - Embellished",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "8md",
+  name: "Saree for Special Occasions",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.2,
+  reviews: 1725,
+  image: md_1,
+  images: [md_1, md_2, md_3, md_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Elegant ethnic saree designed for special occasions, paired with a matching blouse piece.",
+  fabric: "Ethnic Net",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Net",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Net",
+      "Pattern - Ethnic Design",
+      "Blouse Pattern - Solid",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.6 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "2m7bhh",
+  name: "Aagæn Drishya Saree",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.0,
+  reviews: 1485,
+  image: m7bhh_1,
+  images: [m7bhh_1, m7bhh_2, m7bhh_3, m7bhh_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Beautiful ethnic net saree from Aagæn Drishya collection, designed with lightweight fabric and elegant style.",
+  fabric: "Net",
+  care: "Hand Wash",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Net",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Net",
+      "Pattern - Solid",
+      "Blouse Pattern - Designer",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "6xx48r",
+  name: "Beautiful Designer Georgette Laced Saree with Blouse",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.3,
+  reviews: 2125,
+  image: xx48r_1,
+  images: [xx48r_1, xx48r_2, xx48r_3, xx48r_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Beautiful designer georgette laced saree with matching blouse piece, perfect for daily wear, festive events, weddings, parties, and special occasions.",
+  fabric: "Georgette",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Georgette",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Georgette",
+      "Pattern - Printed",
+      "Blouse Pattern - Embroidered",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.3 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "915qyv",
+  name: "World Wine Georgette Saree with Multiple Blouse Options",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.2,
+  reviews: 1870,
+  image: qyv_1,
+  images: [qyv_1, qyv_2, qyv_3, qyv_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Stylish World Wine georgette saree with embroidered detailing and multiple blouse options, perfect for festive and semi-formal occasions.",
+  fabric: "Georgette",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Georgette",
+      "Blouse - Multiple Blouse Options",
+      "Blouse Fabric - Georgette",
+      "Pattern - Embroidered",
+      "Blouse Pattern - Embroidered",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "3heef0",
+  name: "Black White Lycra Blend Zebra Patta Party Wear Saree",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.3,
+  reviews: 1985,
+  image: heef0_1,
+  images: [heef0_1, heef0_2, heef0_3, heef0_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Trendy black and white Lycra blend saree with zebra patta striped design, paired with an art silk blouse piece. Perfect for parties and evening occasions.",
+  fabric: "Lycra Blend",
+  care: "Hand Wash",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Lycra Blend",
+      "Blouse - Separate Blouse Piece",
+      "Blouse Fabric - Art Silk",
+      "Pattern - Striped",
+      "Blouse Pattern - Solid",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "52gvcg",
+  name: "Aakarsha Drishya Saree",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.1,
+  reviews: 1580,
+  image: gvcg_1,
+  images: [gvcg_1, gvcg_2, gvcg_3, gvcg_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Elegant Aakarsha Drishya saree crafted in art silk, paired with a matching running blouse piece for a graceful look.",
+  fabric: "Art Silk",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Art Silk",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Art Silk",
+      "Pattern - Solid",
+      "Blouse Pattern - Designer",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.3 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "8vuqma",
+  name: "Jimmy Choo Organza Saree with Embroidered Border and Sequin Work",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.4,
+  reviews: 1860,
+  image: vuqma_1,
+  images: [vuqma_1, vuqma_2, vuqma_3, vuqma_4],
+  category:"combo3",
+  sizes: ["Free Size"],
+  description: "Luxurious Jimmy Choo Organza saree with embroidered border and elegant sequin work, paired with a satin silk blouse piece. Perfect for festive, wedding, and party occasions.",
+  fabric: "Organza",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Organza",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Satin Silk",
+      "Pattern - Embroidered & Solid",
+      "Border - Sequin Work",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.3 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "7svux5",
+  name: "Traditional Warli Art Printed Georgette Saree",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.3,
+  reviews: 1745,
+  image: svux5_1,
+  images: [svux5_1, svux5_2, svux5_3, svux5_4],
+  category: "combo3",
+  sizes: ["Free Size"],
+  description: "Elegant Warli art printed Georgette saree featuring intricate tribal motifs inspired by traditional village life. Accented with vibrant colors and a pom-pom border, this lightweight saree is perfect for festive and cultural occasions.",
+  fabric: "Georgette",
+  care: "Hand Wash",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Georgette",
+      "Blouse - Separate Piece",
+      "Blouse Fabric - Georgette",
+      "Pattern - Printed",
+      "Border - Pom-Pom Detailing",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "7s0zru",
+  name: "Bandhani Georgette Saree with Lace Border",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.2,
+  reviews: 1610,
+  image: s0zru_1,
+  images: [s0zru_1, s0zru_2, s0zru_3, s0zru_4],
+  category: "combo3",
+  sizes: ["Free Size"],
+  description: "Beautiful Bandhani georgette saree in yellow and red tones, featuring a delicate lace border. Comes with a separate georgette blouse piece, perfect for festive and casual occasions.",
+  fabric: "Georgette",
+  care: "Hand Wash",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Georgette",
+      "Blouse - Separate Piece",
+      "Blouse Fabric - Georgette",
+      "Pattern - Printed",
+      "Blouse Pattern - Border",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "5dk1it",
+  name: "Heavy Silver Embroidery Saree with Full Stone Work",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.4,
+  reviews: 1920,
+  image: dk1it_1,
+  images: [dk1it_1, dk1it_2, dk1it_3, dk1it_4],
+  category: "combo3",
+  sizes: ["Free Size"],
+  description: "Stunning georgette saree with heavy silver embroidery and full stone work, paired with a matching blouse. Perfect for weddings, parties, and festive occasions.",
+  fabric: "Georgette",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Georgette",
+      "Blouse - Multiple Blouse Options",
+      "Blouse Fabric - Georgette",
+      "Pattern - Embroidered",
+      "Blouse Pattern - Embellished",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "5rx562",
+  name: "Shimmer Saree with Mirror Work and Chemical Lace with Diamond Handwork",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.3,
+  reviews: 1845,
+  image: rx562_1,
+  images: [rx562_1, rx562_2, rx562_3, rx562_4],
+  category: "combo3",
+  sizes: ["Free Size"],
+  description: "Contemporary shimmer saree featuring mirror work, chemical lace, and diamond handwork. Adorned with timeless floral motifs, perfect for weddings, parties, and festive occasions.",
+  fabric: "Blend",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Blend",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Lycra",
+      "Pattern - Embellished",
+      "Blouse Pattern - Border",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "8kdjln",
+  name: "Dark Wine Saree Solo Pattern Jalar Chati Embellished with Embroidered Blouse",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.4,
+  reviews: 1995,
+  image: kdjln_1,
+  images: [kdjln_1, kdjln_2, kdjln_3, kdjln_4],
+  category: "combo3",
+  sizes: ["Free Size"],
+  description: "Elegant dark wine chiffon saree with solo pattern jalar chati design, paired with an embroidered blouse. Perfect for festive occasions, parties, and weddings.",
+  fabric: "Chiffon",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Chiffon",
+      "Blouse - Separate Piece",
+      "Blouse Fabric - Chiffon",
+      "Pattern - Embellished",
+      "Blouse Pattern - Embroidered",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.5 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+  },
+  {
+  id: "7q25ko",
+  name: "ALIYAH Fancy Red Organza Silk Saree",
+  price: 99,
+  originalPrice: 291,
+  discount: 66,
+  rating: 4.3,
+  reviews: 1720,
+  image: q25ko_1,
+  images: [q25ko_1, q25ko_2, q25ko_3, q25ko_4],
+  category: "combo3",
+  sizes: ["Free Size"],
+  description: "Premium quality ALIYAH fancy red organza silk saree with elegant border detailing and matching running blouse piece, perfect for festive and special occasions.",
+  fabric: "Organza Silk",
+  care: "Dry Clean Only",
+  shipping: "5-7 Days",
+  details: {
+    ProductDetails: [
+      "Saree Fabric - Organza Silk",
+      "Blouse - Running Blouse",
+      "Blouse Fabric - Organza",
+      "Pattern - Embellished",
+      "Blouse Pattern - Border",
+      "Net Quantity (N) - Single",
+      "Saree Length Size - 5.8 m",
+      "Blouse Length Size - 0.8 m",
+      "Country of Origin - India"
+    ],
+    pants: [],
+    dupatta: []
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1009,26 +1846,26 @@ export const categories = [
   },
   {
     id: 'kurtis',
-    name: 'Kurtis',
+    name: 'Western Dresses',
     icon: 'Shirt',
     bgColor: 'bg-blue-100',
     iconColor: 'text-blue-500',
-    image: '/cat-kurtis.svg'
+    image: '/cat-kurtis.webp'
   },
   {
     id: 'combo2',
-    name: 'Kurti 2 Com...',
+    name: 'Menswear',
     icon: 'Layers',
     bgColor: 'bg-green-100',
     iconColor: 'text-green-500',
-    image: '/cat-combo.svg'
+    image: '/cat-combo.webp'
   },
   {
     id: 'combo3',
-    name: 'Sarees',
+    name: 'Ethnic Wear',
     icon: 'Package',
     bgColor: 'bg-yellow-100',
     iconColor: 'text-yellow-500',
-    image: '/cat-sarees.svg'
+    image: '/cat-sarees.webp'
   }
 ];
