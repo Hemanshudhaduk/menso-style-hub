@@ -1,4 +1,5 @@
 import { Product } from '@/types';
+import { generatedShirts } from './generated-shirts.ts';
 
 // Import product images
 import kurtiWhitePink from '@/assets/kurti-white-pink.jpg';
@@ -1803,7 +1804,7 @@ export const products: Product[] = [
     pants: [],
     dupatta: []
   }
-}
+},
 
 
 
@@ -1832,6 +1833,8 @@ export const products: Product[] = [
 
 
   
+  // AUTO-APPENDED GENERATED SHIRTS
+  ...generatedShirts
 ];
 
 // Categories

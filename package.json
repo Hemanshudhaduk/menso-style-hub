@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "scrape:mens": "node scripts/scrape-meesho.mjs https://www.meesho.com/menswear/clp/40NO 50"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

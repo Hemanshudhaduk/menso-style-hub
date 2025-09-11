@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Heart, ShoppingCart, Star, Share } from "lucide-react";
+import { ArrowLeft, Heart, ShoppingCart, Star, Share, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Notification } from "@/components/ui/notification";
 import { ProductCard } from "@/components/ProductCard";
@@ -21,31 +21,31 @@ const ProductDetail = () => {
   const [notification, setNotification] = useState({ show: false, message: "" });
   const [isShareMenuOpen, setIsShareMenuOpen] = useState(false);
   const { isLoggedIn } = useUser();
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   // Fetch product by id
   const product = products.find((p) => String(p.id) === String(id));
-  if (!product) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Product not found</p>
-      </div>
-    );
-  }
 
-  // Gallery logic
-  const galleryImages = product.images?.length ? product.images : [product.image];
-  const recommendedLimit = product.category === "kurtis" ? 6 : 4;
-  const recommendedProducts = (() => {
-    const sameCategory = products.filter(
-      (p) => p.category === product.category && String(p.id) !== String(product.id)
-    );
-    // Shuffle randomly on each visit to detail page
-    for (let i = sameCategory.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [sameCategory[i], sameCategory[j]] = [sameCategory[j], sameCategory[i]];
-    }
-    return sameCategory.slice(0, recommendedLimit);
-  })();
+  // Gallery logic (safe if product is undefined)
+  const galleryImages = useMemo(() => {
+    if (!product) return [] as string[];
+    if (product.images?.length) return product.images;
+    return product.image ? [product.image] : [];
+  }, [product]);
+  const recommendedLimit = product?.category === "kurtis" ? 6 : 4;
+  const recommendedProducts = product
+    ? (() => {
+        const sameCategory = products.filter(
+          (p) => p.category === product.category && String(p.id) !== String(product.id)
+        );
+        // Shuffle randomly on each visit to detail page
+        for (let i = sameCategory.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [sameCategory[i], sameCategory[j]] = [sameCategory[j], sameCategory[i]];
+        }
+        return sameCategory.slice(0, recommendedLimit);
+      })()
+    : [];
 
   // Cart/Wishlist actions
   const handleAddToCart = () => {
@@ -80,9 +80,9 @@ const ProductDetail = () => {
 
   // Share logic
   const getShareUrl = () => {
-    return `${window.location.origin}/product/${product.id}`;
+    return product ? `${window.location.origin}/product/${product.id}` : window.location.origin;
   };
-  const shareMessage = `Check out this product on meesho: ${getShareUrl()}`;
+  const shareMessage = product ? `Check out this product on meesho: ${getShareUrl()}` : "";
 
   const handleShareClick = async () => {
     setIsShareMenuOpen(false);
@@ -94,7 +94,9 @@ const ProductDetail = () => {
           url: getShareUrl(),
         });
         return;
-      } catch (error) {}
+      } catch (error) {
+        console.error(error);
+      }
     }
     setIsShareMenuOpen(true);
   };
@@ -110,6 +112,24 @@ const ProductDetail = () => {
     window.scrollTo(0, 0);
     setSelectedImageIndex(0);
   }, [id]);
+
+  // No autoplay; user will swipe or tap dots to navigate images
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Product not found</p>
+      </div>
+    );
+  }
+
+  const handlePrevImage = () => {
+    setSelectedImageIndex((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+  };
+
+  const handleNextImage = () => {
+    setSelectedImageIndex((prev) => (prev + 1) % galleryImages.length);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -220,12 +240,36 @@ const ProductDetail = () => {
           {/* Mobile-first single column layout inside mobile frame */}
           <div className="flex flex-col gap-4">
             <div className="w-full flex flex-col justify-between">
-              <div className="aspect-[3/4] w-full rounded overflow-hidden bg-gray-50">
+              <div
+                className="aspect-[3/4] w-full rounded overflow-hidden bg-gray-50 relative"
+                onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
+                onTouchEnd={(e) => {
+                  if (touchStartX == null) return;
+                  const endX = e.changedTouches[0]?.clientX ?? touchStartX;
+                  const delta = endX - touchStartX;
+                  if (Math.abs(delta) > 40) {
+                    if (delta > 0) handlePrevImage(); else handleNextImage();
+                  }
+                  setTouchStartX(null);
+                }}
+              >
                 <img
                   src={galleryImages[selectedImageIndex]}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
+                {galleryImages.length > 1 && (
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/20 px-2 py-1 rounded-full">
+                    {galleryImages.map((_, idx) => (
+                      <button
+                        key={idx}
+                        aria-label={`Go to image ${idx + 1}`}
+                        onClick={() => setSelectedImageIndex(idx)}
+                        className={`${idx === selectedImageIndex ? "w-2.5 h-2.5 bg-white" : "w-2 h-2 bg-white/60"} rounded-full`}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="p-2 sm:p-4">
                 <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
@@ -292,9 +336,13 @@ const ProductDetail = () => {
                     </svg>
                   </span>
                 </div>
-                <div className="mb-4">
+                <div className="mb-4 flex items-center gap-2 flex-wrap">
                   <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded whitespace-nowrap inline-flex items-center">
                     Free Delivery
+                  </span>
+                  <span className="bg-purple-100 text-fashion-purple text-xs px-2 py-1 rounded whitespace-nowrap inline-flex items-center gap-1">
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    7-Day Return Policy
                   </span>
                 </div>
                 {/* Size Selection */}
