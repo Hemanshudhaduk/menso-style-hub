@@ -19,7 +19,7 @@ const Categories = () => {
       {/* Main */}
       <main className="p-4">
         <div className="grid grid-cols-2 gap-3">
-          {/* Category: Kurtis */}
+          {/* Category: Western Dresses */}
           <button
             className="bg-white rounded-lg border p-3 flex flex-col items-center justify-center gap-2 hover:shadow-sm transition"
             onClick={() => navigate("/category/kurtis")}
@@ -27,10 +27,10 @@ const Categories = () => {
             <div className="w-14 h-14 rounded-full bg-fashion-purple/10 flex items-center justify-center">
               <Shirt className="w-6 h-6 text-fashion-purple" />
             </div>
-            <span className="text-sm font-medium">Kurtis</span>
+            <span className="text-sm font-medium">Western Dresses</span>
           </button>
 
-          {/* Category: Kurti 2 Combo */}
+          {/* Category: Menswear */}
           <button
             className="bg-white rounded-lg border p-3 flex flex-col items-center justify-center gap-2 hover:shadow-sm transition"
             onClick={() => navigate("/category/combo2")}
@@ -38,10 +38,10 @@ const Categories = () => {
             <div className="w-14 h-14 rounded-full bg-fashion-purple/10 flex items-center justify-center">
               <Layers3 className="w-6 h-6 text-fashion-purple" />
             </div>
-            <span className="text-sm font-medium">Kurti 2 Combo</span>
+            <span className="text-sm font-medium">Menswear</span>
           </button>
 
-          {/* Category: Sarees */}
+          {/* Category: Ethnic wear */}
           <button
             className="bg-white rounded-lg border p-3 flex flex-col items-center justify-center gap-2 hover:shadow-sm transition"
             onClick={() => navigate("/category/combo3")}
@@ -49,7 +49,7 @@ const Categories = () => {
             <div className="w-14 h-14 rounded-full bg-fashion-purple/10 flex items-center justify-center">
               <Layers3 className="w-6 h-6 text-fashion-purple" />
             </div>
-            <span className="text-sm font-medium">Sarees</span>
+            <span className="text-sm font-medium">Ethnic wear</span>
           </button>
         </div>
       </main>

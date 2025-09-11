@@ -289,10 +289,10 @@ const Index = () => {
               {selectedCategory === "all"
                 ? "Products For You"
                 : selectedCategory === "kurtis"
-                ? "Kurtis Collection"
+                ? "Western Dresses"
                 : selectedCategory === "combo2"
-                ? "Kurti 2 Combo Pack"
-                : "Sarres"}
+                ? "Menswear"
+                : "Ethnic wear"}
             </h3>
             {searchQuery && (
               <span className="text-sm text-muted-foreground mt-2 sm:mt-0">

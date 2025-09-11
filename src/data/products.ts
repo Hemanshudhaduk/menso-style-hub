@@ -358,30 +358,6 @@ export const products: Product[] = [
     }
   },
   {
-    id: 5,
-    name: "Sarees",
-    price: 199,
-    originalPrice: 3000,
-    discount: 96,
-    rating: 4.8,
-    reviews: 1803,
-    image: kurtiCombo2, // reusing for now
-    images: [kurtiCombo2],
-    category: "combo3",
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    description: "Premium combo pack of 3 designer kurtis.",
-    fabric: "Cotton Blend",
-    care: "Machine Wash",
-    shipping: "10-12 Days",
-    details: {
-      kurta: [
-        "Fabric - Cotton Blend",
-        "Set of 3 Designer Kurtis",
-        "Perfect for festive and daily wear"
-      ]
-    }
-  },
-  {
     id: "7tvi20",
     name: "Anarkali",
     price: 99,
@@ -1133,38 +1109,7 @@ export const products: Product[] = [
     "dupatta": []
   }
   },
-  {
-  id: "90h3oo",
-  name: "Banarasi Silk Saree with Golden Zari Border",
-  price: 99,
-  originalPrice: 291,
-  discount: 66,
-  rating: 4.3,
-  reviews: 2140,
-  image: h3oo_1,
-  images: [h3oo_1, h3oo_2, h3oo_3, h3oo_4],
-  category:"combo3",
-  sizes: ["Free Size"],
-  description: "Traditional Banarasi Silk Saree adorned with an elegant golden zari border and matching blouse piece.",
-  fabric: "Silk",
-  care: "Dry Clean Only",
-  shipping: "5-7 Days",
-  details: {
-    ProductDetails: [
-      "Saree Fabric - Silk",
-      "Blouse - Running Blouse",
-      "Blouse Fabric - Cotton",
-      "Pattern - Zari Woven",
-      "Blouse Pattern - Embellished",
-      "Net Quantity (N) - Single",
-      "Saree Length Size - 5.5 m",
-      "Blouse Length Size - 0.9 m",
-      "Country of Origin - India"
-    ],
-    pants: [],
-    dupatta: []
-  }
-  },
+  
   {
   id: "7x0pi5",
   name: "Brassa Net Saree",
@@ -1293,38 +1238,7 @@ export const products: Product[] = [
     dupatta: []
   }
   },
-  {
-  id: "6i0e3j14_BG",
-  name: "Litchi Silk Saree with Woven Design",
-  price: 99,
-  originalPrice: 291,
-  discount: 66,
-  rating: 4.2,
-  reviews: 1785,
-  image: i0e3j_1,
-  images: [i0e3j_1, i0e3j_2, i0e3j_3, i0e3j_4],
-  category:"combo3",
-  sizes: ["Free Size"],
-  description: "Elegant Litchi Silk Saree with traditional woven design, paired with a running blouse piece.",
-  fabric: "Silk",
-  care: "Dry Clean Only",
-  shipping: "5-7 Days",
-  details: {
-    ProductDetails: [
-      "Saree Fabric - Litchi Silk",
-      "Blouse - Running Blouse",
-      "Blouse Fabric - Silk",
-      "Pattern - Woven Design",
-      "Blouse Pattern - Solid",
-      "Net Quantity (N) - Single",
-      "Saree Length Size - 5.3 m",
-      "Blouse Length Size - 0.8 m",
-      "Country of Origin - India"
-    ],
-    pants: [],
-    dupatta: []
-  }
-  },
+  
   {
   id: "lxnug",
   name: "Silk White Saree With Blouse",

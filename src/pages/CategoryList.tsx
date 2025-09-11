@@ -16,11 +16,11 @@ const CategoryList = () => {
 
   const title =
     category === "kurtis"
-      ? "Kurtis"
+      ? "Western Dresses"
       : category === "combo2"
-      ? "Kurti 2 Combo"
+      ? "Menswear"
       : category === "combo3"
-      ? "Sarees"
+      ? "Ethnic wear"
       : "Products";
 
   return (

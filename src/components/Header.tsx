@@ -78,7 +78,7 @@ export const Header = ({
           <div className="relative">
             <Input
               type="text"
-              placeholder="Search for Sarees, Kurtis, Cosmetics, etc."
+              placeholder="Search for Ethnic wear, Western Dresses, Menswear, etc."
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-full pl-10 focus:border-fashion-purple"
