@@ -13,103 +13,38 @@ import { computeGaneshOfferDiscount } from '@/lib/utils';
 import { useOrders } from '@/hooks/useOrders';
 import { useUser } from '@/hooks/useUser';
 
-// API configuration
+// API configuration for LG-Pay backend
 const API_BASE_URL: string = 'https://messho-backend.vercel.app';
-const RAZORPAY_KEY_ID: string = 'rzp_live_RAHSZS9k2sYCCf';
 
-// API response types
-interface APIResponse {
+// LG-Pay API response types
+interface LGPayResponse {
   success: boolean;
-  message: string;
+  message?: string;
+  order_sn?: string;
+  response?: {
+    pay_url?: string;
+    payment_url?: string;
+    status?: string;
+    [key: string]: any;
+  };
 }
 
-type UPIValidationResponse = APIResponse;
-
-
-interface OrderCreationResponse extends APIResponse {
-  orderId: string;
-  amount: number;
-  currency: string;
-}
-
-type PaymentVerificationResponse = APIResponse;
-
-// API service functions
-const paymentAPI = {
-  validateUPI: async (upiId: string): Promise<UPIValidationResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/validate-upi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ upiId })
-    });
-    return response.json();
-  },
-
-  createOrder: async (orderData: Record<string, unknown>): Promise<OrderCreationResponse> => {
+// Simplified API service for LG-Pay
+const lgPayAPI = {
+  createOrder: async (amount: number): Promise<LGPayResponse> => {
     const response = await fetch(`${API_BASE_URL}/api/create-order`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
+      body: JSON.stringify({ amount })
     });
     return response.json();
   },
 
-  verifyPayment: async (paymentData: Record<string, unknown>): Promise<PaymentVerificationResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/verify-payment`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(paymentData)
-    });
+  checkHealth: async (): Promise<{ status: string; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/health`);
     return response.json();
   }
 };
-
-// Razorpay types
-interface RazorpayResponse {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-}
-
-interface RazorpayOptions {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id: string;
-  prefill: {
-    name: string;
-    email: string;
-    contact: string;
-  };
-  notes: {
-    address: string;
-    upi_id: string;
-  };
-  theme: {
-    color: string;
-  };
-  method: {
-    upi: boolean;
-    card: boolean;
-    netbanking: boolean;
-    wallet: boolean;
-  };
-  handler: (response: RazorpayResponse) => Promise<void>;
-  modal: {
-    ondismiss: () => void;
-  };
-}
-
-// declare global {
-//   interface Window {
-//     Razorpay: new (options: RazorpayOptions) => {
-//       open: () => void;
-//     };
-//     upiValidationTimeout?: NodeJS.Timeout;
-//   }
-// }
 
 // Step interface
 interface CheckoutStep {
@@ -118,16 +53,10 @@ interface CheckoutStep {
   completed: boolean;
 }
 
-// UPI validation status type
-interface UPIValidationStatus {
-  isValid: boolean;
-  message: string;
-}
-
-// Enhanced Order interface with payment details
+// Enhanced Order interface with LG-Pay details
 interface EnhancedOrder extends Order {
-  paymentId?: string;
-  razorpayOrderId?: string;
+  orderSN?: string;
+  lgPayResponse?: any;
 }
 
 // Address validation errors type
@@ -138,15 +67,11 @@ const Checkout: React.FC = () => {
   const { cart, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [selectedUpiProvider, setSelectedUpiProvider] = useState<string>('gpay');
-  const [upiId, setUpiId] = useState<string>('');
   const [lastOrder, setLastOrder] = useState<EnhancedOrder | null>(null);
   const { user } = useUser();
   
   // Loading states
-  const [isValidatingUPI, setIsValidatingUPI] = useState<boolean>(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
-  const [upiValidationStatus, setUpiValidationStatus] = useState<UPIValidationStatus | null>(null);
 
   const [address, setAddress] = useState<Address>({
     fullName: user ? `${user.firstName} ${user.lastName}` : '',
@@ -158,7 +83,6 @@ const Checkout: React.FC = () => {
     roadName: ''
   });
   const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
-  const [selectedPayment, setSelectedPayment] = useState<string>('upi');
   const { placeOrder } = useOrders();
 
   const getDiscountInfo = (): { subtotal: number; discount: number; total: number } => {
@@ -176,9 +100,18 @@ const Checkout: React.FC = () => {
     { id: 4, name: 'Summary', completed: false }
   ];
 
-  // Removed auto-redirect to home to avoid racing when cart is still loading
-
-  // no-op: reverted deep-linking to payment
+  // Check if cart is empty and redirect
+  useEffect(() => {
+    if (cart.length === 0 && currentStep !== 4) {
+      // Allow staying on step 4 (summary) even if cart is empty
+      const timer = setTimeout(() => {
+        if (currentStep !== 4) {
+          navigate('/');
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [cart.length, currentStep, navigate]);
 
   const validateAddress = (addr: Address): boolean => {
     const errors: AddressErrors = {};
@@ -203,41 +136,6 @@ const Checkout: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // UPI validation with API call
-  const handleUPIValidation = async (inputUpiId: string): Promise<void> => {
-    if (!inputUpiId.trim()) {
-      setUpiValidationStatus(null);
-      return;
-    }
-
-    setIsValidatingUPI(true);
-    try {
-      const result = await paymentAPI.validateUPI(inputUpiId);
-      if (result.success) {
-        setUpiValidationStatus({ isValid: true, message: 'UPI ID is valid' });
-      } else {
-        setUpiValidationStatus({ isValid: false, message: result.message });
-      }
-    } catch (error) {
-      console.error('UPI validation error:', error);
-      setUpiValidationStatus({ isValid: false, message: 'Unable to validate UPI ID' });
-    } finally {
-      setIsValidatingUPI(false);
-    }
-  };
-
-  const handleUPIChange = (value: string): void => {
-    const sanitized = value.replace(/\s+/g, '');
-    setUpiId(sanitized);
-    // Debounce validation
-    if (window.upiValidationTimeout) {
-      clearTimeout(window.upiValidationTimeout);
-    }
-    window.upiValidationTimeout = setTimeout(() => {
-      handleUPIValidation(sanitized);
-    }, 500);
-  };
-
   const handleAddressSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (!validateAddress(address)) {
@@ -251,143 +149,55 @@ const Checkout: React.FC = () => {
     setCurrentStep(3);
   };
 
-  // Load Razorpay script
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handlePayment = async (): Promise<void> => {
-    if (selectedPayment === 'upi') {
-      const upiClean = upiId.replace(/\s+/g, '');
-      if (!upiClean) {
-        toast({ title: 'Enter UPI ID', description: 'Please provide your UPI ID to continue.' });
-        return;
-      }
-      if (upiValidationStatus && !upiValidationStatus.isValid) {
-        toast({ title: 'Invalid UPI ID', description: 'Please enter a valid UPI ID.' });
-        return;
-      }
-    }
-
     setIsProcessingPayment(true);
 
     try {
-      // Load Razorpay script
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        toast({ title: 'Error', description: 'Failed to load payment gateway' });
-        return;
-      }
-
-      // Calculate total amount
+      // Calculate total amount in rupees
       const { total } = getDiscountInfo();
-      const amountInPaisa = total * 100; // Convert to paisa
-
-      // Create order
-      const upiClean = upiId.replace(/\s+/g, '');
-      const orderData = {
-        amount: amountInPaisa,
-        currency: 'INR',
-        upiId: upiClean,
-        paymentMethod: selectedUpiProvider,
-        customerDetails: {
-          name: address.fullName,
-          email: user?.email || 'customer@example.com',
-          contact: address.mobile
-        }
-      };
-
-      const orderResponse = await paymentAPI.createOrder(orderData);
+      
+      // Create order with LG-Pay
+      const orderResponse = await lgPayAPI.createOrder(total);
 
       if (!orderResponse.success) {
-        toast({ title: 'Error', description: orderResponse.message });
+        toast({ 
+          title: 'Order Creation Failed', 
+          description: orderResponse.message || 'Unable to create order. Please try again.' 
+        });
         return;
       }
 
-      // Razorpay options
-      const options: RazorpayOptions = {
-        key: RAZORPAY_KEY_ID,
-        amount: orderResponse.amount,
-        currency: orderResponse.currency,
-        name: 'Your Store Name',
-        description: `Order for ${cart.length} items`,
-        order_id: orderResponse.orderId,
-        prefill: {
-          name: address.fullName,
-          email: user?.email || '',
-          contact: address.mobile,
-        },
-        notes: {
-          address: `${address.houseNo}, ${address.roadName}, ${address.city}`,
-          upi_id: upiClean
-        },
-        theme: {
-          color: '#8B5CF6'
-        },
-        method: {
-          upi: selectedPayment === 'upi',
-          card: selectedPayment === 'card',
-          netbanking: selectedPayment === 'netbanking',
-          wallet: selectedPayment === 'wallet'
-        },
-        handler: async function (response: RazorpayResponse): Promise<void> {
-          try {
-            // Verify payment
-            const verificationResult = await paymentAPI.verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
-            });
+      // Create local order record
+      const order = placeOrder(cart, address, 'lgpay-online');
+      setLastOrder({
+        ...order,
+        orderSN: orderResponse.order_sn,
+        lgPayResponse: orderResponse.response
+      });
 
-            if (verificationResult.success) {
-              // Payment successful
-              const order = placeOrder(cart, address, `${selectedPayment}-${selectedUpiProvider}`);
-              setLastOrder({
-                ...order,
-                paymentId: response.razorpay_payment_id,
-                razorpayOrderId: response.razorpay_order_id
-              });
-              
-              toast({
-                title: 'Payment Successful!',
-                description: `Order ${order.id} confirmed.`,
-              });
-              
-              clearCart();
-              setCurrentStep(4);
-            } else {
-              toast({
-                title: 'Payment Verification Failed',
-                description: 'Please contact support if amount was deducted.',
-              });
-            }
-          } catch (error) {
-            console.error('Payment verification error:', error);
-            toast({
-              title: 'Payment Verification Error',
-              description: 'Please contact support.',
-            });
-          }
-        },
-        modal: {
-          ondismiss: function(): void {
-            toast({
-              title: 'Payment Cancelled',
-              description: 'You can retry the payment anytime.',
-            });
-          }
-        }
-      };
+      // Store order info in sessionStorage for return handling
+      sessionStorage.setItem('pendingOrder', JSON.stringify({
+        orderId: order.id,
+        orderSN: orderResponse.order_sn,
+        amount: total
+      }));
 
-      // Open Razorpay checkout
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      // Check if we have a payment URL
+      const paymentUrl = orderResponse.response?.pay_url || orderResponse.response?.payment_url;
+      
+      if (paymentUrl) {
+        // Redirect to LG-Pay payment page
+        window.location.href = paymentUrl;
+      } else {
+        // If no payment URL, show success (for testing purposes)
+        toast({
+          title: 'Order Created Successfully!',
+          description: `Order ${order.id} has been placed.`,
+        });
+        
+        clearCart();
+        setCurrentStep(4);
+      }
 
     } catch (error) {
       console.error('Payment error:', error);
@@ -400,205 +210,298 @@ const Checkout: React.FC = () => {
     }
   };
 
+  // Handle return from payment gateway
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    const orderSN = urlParams.get('order_sn');
+
+    if (status && orderSN) {
+      const pendingOrderData = sessionStorage.getItem('pendingOrder');
+      
+      if (pendingOrderData) {
+        const pendingOrder = JSON.parse(pendingOrderData);
+        
+        if (status === 'success') {
+          toast({
+            title: 'Payment Successful!',
+            description: `Order ${pendingOrder.orderId} confirmed.`,
+          });
+          
+          clearCart();
+          setCurrentStep(4);
+        } else if (status === 'failed') {
+          toast({
+            title: 'Payment Failed',
+            description: 'Your payment was not processed. Please try again.',
+            variant: 'destructive'
+          });
+        }
+        
+        // Clean up URL and session storage
+        sessionStorage.removeItem('pendingOrder');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, [clearCart, toast]);
+
   const handleDownloadInvoice = (): void => {
     if (!lastOrder) return;
+    
     const invoiceHtml = `
+      <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8" />
           <title>Invoice ${lastOrder.id}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 24px; }
-            h1 { font-size: 18px; margin: 0 0 8px; }
-            .section { margin-bottom: 16px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
-            th { background: #f5f5f5; text-align: left; }
-            .right { text-align: right; }
+            body { font-family: Arial, sans-serif; padding: 24px; max-width: 800px; margin: 0 auto; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .company-name { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+            .invoice-title { font-size: 20px; color: #666; }
+            .section { margin-bottom: 20px; }
+            .section-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #333; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background: #f5f5f5; font-weight: bold; }
+            .text-right { text-align: right; }
+            .total-row { background: #f9f9f9; font-weight: bold; }
+            .order-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .customer-info { background: #f9f9f9; padding: 15px; border-radius: 5px; }
           </style>
         </head>
         <body>
-          <h1>Invoice</h1>
-          <div class="section">
-            <div><strong>Order ID:</strong> ${lastOrder.id}</div>
-            <div><strong>Payment ID:</strong> ${lastOrder.paymentId || 'N/A'}</div>
-            <div><strong>Date:</strong> ${new Date(lastOrder.createdAt).toLocaleString()}</div>
-            <div><strong>Payment:</strong> ${lastOrder.paymentMethod}</div>
+          <div class="header">
+            <div class="company-name">Your Store Name</div>
+            <div class="invoice-title">INVOICE</div>
           </div>
-          <div class="section">
-            <div><strong>Ship To:</strong></div>
-            <div>${lastOrder.address.fullName}</div>
-            <div>${lastOrder.address.houseNo}, ${lastOrder.address.roadName}</div>
-            <div>${lastOrder.address.city}, ${lastOrder.address.state} - ${lastOrder.address.pincode}</div>
-            <div>${lastOrder.address.mobile}</div>
+          
+          <div class="order-info">
+            <div>
+              <div class="section-title">Order Details</div>
+              <div><strong>Order ID:</strong> ${lastOrder.id}</div>
+              <div><strong>Order SN:</strong> ${lastOrder.orderSN || 'N/A'}</div>
+              <div><strong>Date:</strong> ${new Date(lastOrder.createdAt).toLocaleString()}</div>
+              <div><strong>Payment Method:</strong> ${lastOrder.paymentMethod}</div>
+            </div>
+            
+            <div class="customer-info">
+              <div class="section-title">Billing & Shipping Address</div>
+              <div><strong>${lastOrder.address.fullName}</strong></div>
+              <div>${lastOrder.address.houseNo}, ${lastOrder.address.roadName}</div>
+              <div>${lastOrder.address.city}, ${lastOrder.address.state} - ${lastOrder.address.pincode}</div>
+              <div>Phone: ${lastOrder.address.mobile}</div>
+            </div>
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Size</th>
-                <th class="right">Qty</th>
-                <th class="right">Price</th>
-                <th class="right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${lastOrder.items.map(i => `
+
+          <div class="section">
+            <div class="section-title">Order Items</div>
+            <table>
+              <thead>
                 <tr>
-                  <td>${i.name}</td>
-                  <td>${i.size}</td>
-                  <td class="right">${i.quantity}</td>
-                  <td class="right">₹${i.price}.00</td>
-                  <td class="right">₹${i.price * i.quantity}.00</td>
+                  <th>Item Description</th>
+                  <th>Size</th>
+                  <th class="text-right">Quantity</th>
+                  <th class="text-right">Unit Price</th>
+                  <th class="text-right">Amount</th>
                 </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div class="section" style="text-align:right;margin-top:12px"><strong>Total: ₹${lastOrder.total}.00</strong></div>
+              </thead>
+              <tbody>
+                ${lastOrder.items.map(item => `
+                  <tr>
+                    <td>${item.name}</td>
+                    <td>${item.size}</td>
+                    <td class="text-right">${item.quantity}</td>
+                    <td class="text-right">₹${item.price}.00</td>
+                    <td class="text-right">₹${item.price * item.quantity}.00</td>
+                  </tr>
+                `).join('')}
+                <tr class="total-row">
+                  <td colspan="4" class="text-right"><strong>Total Amount</strong></td>
+                  <td class="text-right"><strong>₹${lastOrder.total}.00</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <p><strong>Thank you for your order!</strong></p>
+            <p>For any queries, please contact our customer support.</p>
+          </div>
         </body>
       </html>
     `;
+
     const win = window.open('', '_blank');
-    if (!win) return;
+    if (!win) {
+      toast({
+        title: 'Pop-up Blocked',
+        description: 'Please allow pop-ups to download the invoice.',
+      });
+      return;
+    }
+    
     win.document.write(invoiceHtml);
     win.document.close();
     win.focus();
-    win.print();
+    
+    // Add a small delay before printing to ensure content is loaded
+    setTimeout(() => {
+      win.print();
+    }, 500);
   };
 
-  if (cart.length === 0 && currentStep === 1) {
+  if (cart.length === 0 && currentStep < 4) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 mb-4">Your cart is empty</p>
-          <Button onClick={() => navigate('/')}>Continue Shopping</Button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center bg-white rounded-lg p-8 shadow-sm max-w-md w-full">
+          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            🛒
+          </div>
+          <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
+          <p className="text-gray-500 mb-6">Add some items to your cart to continue shopping</p>
+          <Button onClick={() => navigate('/')} className="w-full">
+            Continue Shopping
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="px-4 py-3">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header - Fixed positioning */}
+      <header className="bg-white shadow-sm sticky top-0 z-50 border-b">
+        <div className="max-w-md mx-auto px-4 py-3">
           <div className="flex items-center">
-            <button onClick={() => navigate(-1)} className="mr-3">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="mr-3 p-1 hover:bg-gray-100 rounded-full transition-colors"
+            >
               <ArrowLeft className="text-gray-600 h-6 w-6" />
             </button>
-            <h2 className="text-xl font-semibold">
-              {currentStep === 1 ? 'CART' : 
-               currentStep === 2 ? 'ADD DELIVERY ADDRESS' : 
-               currentStep === 3 ? 'PAYMENT' : 'ORDER SUMMARY'}
-            </h2>
+            <h1 className="text-lg font-semibold text-gray-900">
+              {currentStep === 1 ? 'Cart' : 
+               currentStep === 2 ? 'Delivery Address' : 
+               currentStep === 3 ? 'Payment' : 'Order Confirmed'}
+            </h1>
           </div>
         </div>
       </header>
 
-      {/* Stepper */}
-      <div className="bg-white px-4 py-4">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                  step.completed 
-                    ? 'bg-fashion-purple text-white' 
-                    : currentStep === step.id
-                    ? 'bg-fashion-purple text-white'
-                    : 'bg-gray-300 text-gray-600'
-                }`}>
-                  {step.completed ? '✓' : step.id}
+      {/* Stepper - Fixed width container */}
+      <div className="bg-white border-b">
+        <div className="max-w-md mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center flex-1">
+                <div className="flex items-center">
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                    step.completed 
+                      ? 'bg-purple-600 text-white' 
+                      : currentStep === step.id
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-300 text-gray-600'
+                  }`}>
+                    {step.completed ? '✓' : step.id}
+                  </div>
+                  <span className="ml-2 text-xs font-medium truncate max-w-[60px] sm:max-w-[80px]">
+                    {step.name}
+                  </span>
                 </div>
-                <span className="ml-2 text-xs truncate max-w-[72px]">{step.name}</span>
+                {index < steps.length - 1 && (
+                  <div className="flex-1 h-px bg-gray-300 mx-2 min-w-[20px]"></div>
+                )}
               </div>
-              {index < steps.length - 1 && (
-                <div className="flex-1 h-px bg-gray-300 mx-2 md:mx-4"></div>
-              )}
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 
-      <main className="pb-28 w-full max-w-[430px] mx-auto">
+      {/* Main Content - Constrained container */}
+      <main className="max-w-md mx-auto pb-24">
         {/* Step 1: Cart */}
         {currentStep === 1 && (
-          <div className="p-4">
-            <div className="space-y-4">
-              {cart.map((item: CartItem) => (
-                <div key={`${item.id}-${item.size}`} className="bg-white rounded-lg p-4 flex space-x-4">
+          <div className="p-4 space-y-4">
+            {cart.map((item: CartItem) => (
+              <div key={`${item.id}-${item.size}`} className="bg-white rounded-lg p-4 shadow-sm">
+                <div className="flex space-x-4">
                   <img 
                     src={item.image} 
                     alt={item.name}
-                    className="w-20 h-24 object-cover rounded"
+                    className="w-20 h-24 object-cover rounded-lg flex-shrink-0"
                   />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-sm mb-1">{item.name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm mb-1 line-clamp-2">{item.name}</h3>
                     <div className="flex items-center space-x-2 mb-2">
-                      <span className="font-semibold">₹{item.price}</span>
+                      <span className="font-semibold text-purple-600">₹{item.price}</span>
                       <span className="text-gray-400 line-through text-sm">₹{item.originalPrice}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">Size: {item.size}</p>
+                    <p className="text-sm text-gray-600 mb-3">Size: {item.size}</p>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <button 
                           onClick={() => updateQuantity(item.id, item.size, -1)}
-                          className="w-8 h-8 rounded-full border flex items-center justify-center"
+                          className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-purple-400 transition-colors"
+                          disabled={item.quantity <= 1}
                         >
                           -
                         </button>
-                        <span>Qty: {item.quantity.toString().padStart(2, '0')}</span>
+                        <span className="min-w-[50px] text-center font-medium">
+                          Qty: {item.quantity.toString().padStart(2, '0')}
+                        </span>
                         <button 
                           onClick={() => updateQuantity(item.id, item.size, 1)}
-                          className="w-8 h-8 rounded-full border flex items-center justify-center"
+                          className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-purple-400 transition-colors"
                         >
                           +
                         </button>
                       </div>
                       <button 
                         onClick={() => removeFromCart(item.id, item.size)}
-                        className="text-gray-400"
+                        className="text-red-400 hover:text-red-600 p-2 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
 
-            <div className="bg-white rounded-lg p-4 mt-4">
+            {/* Cart Summary */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
               {(() => {
                 const quantity = cart.reduce((s, i) => s + i.quantity, 0);
                 const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
                 const finalTotal = getTotalPrice() - discount;
                 return (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>Cart Total:</span>
                       {discount > 0 ? (
-                        <span className="font-semibold whitespace-nowrap">
-                          <span className="line-through mr-2">₹{getTotalPrice()}.00</span>
-                          <span className="text-green-600">₹{finalTotal}.00</span>
+                        <span className="font-semibold">
+                          <span className="line-through text-gray-400 mr-2">₹{getTotalPrice()}</span>
+                          <span className="text-green-600">₹{finalTotal}</span>
                         </span>
                       ) : (
-                        <span className="font-semibold">₹{getTotalPrice()}.00</span>
+                        <span className="font-semibold">₹{getTotalPrice()}</span>
                       )}
                     </div>
                     {discount > 0 && (
                       <div className="flex justify-between text-green-600">
                         <span>Ganesh Offer (30% off)</span>
-                        <span>-₹{discount}.00</span>
+                        <span>-₹{discount}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
                       <span>Shipping:</span>
                       <span className="text-green-600 font-medium">FREE</span>
                     </div>
-                    <hr />
-                    <div className="flex justify-between font-semibold">
+                    <hr className="border-gray-200" />
+                    <div className="flex justify-between font-semibold text-lg">
                       <span>To Pay:</span>
-                      <span className="whitespace-nowrap">₹{finalTotal}.00</span>
+                      <span className="text-purple-600">₹{finalTotal}</span>
                     </div>
                   </div>
                 );
@@ -610,21 +513,22 @@ const Checkout: React.FC = () => {
         {/* Step 2: Address */}
         {currentStep === 2 && (
           <div className="p-4">
-            <div className="bg-white rounded-lg p-4">
+            <div className="bg-white rounded-lg p-4 shadow-sm">
               <h3 className="text-lg font-semibold mb-4 flex items-center">
                 <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                   📍
                 </span>
-                Address
+                Delivery Address
               </h3>
               
               <form id="address-form" onSubmit={handleAddressSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName">Full Name *</Label>
                   <Input
                     id="fullName"
                     value={address.fullName}
                     onChange={(e) => setAddress({...address, fullName: e.target.value})}
+                    className={addressErrors.fullName ? 'border-red-500' : ''}
                     required
                   />
                   {addressErrors.fullName && (
@@ -633,12 +537,13 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="mobile">Mobile number</Label>
+                  <Label htmlFor="mobile">Mobile Number *</Label>
                   <Input
                     id="mobile"
                     type="tel"
                     value={address.mobile}
                     onChange={(e) => setAddress({...address, mobile: e.target.value})}
+                    className={addressErrors.mobile ? 'border-red-500' : ''}
                     required
                   />
                   {addressErrors.mobile && (
@@ -647,11 +552,12 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="pincode">Pincode</Label>
+                  <Label htmlFor="pincode">Pincode *</Label>
                   <Input
                     id="pincode"
                     value={address.pincode}
                     onChange={(e) => setAddress({...address, pincode: e.target.value})}
+                    className={addressErrors.pincode ? 'border-red-500' : ''}
                     required
                   />
                   {addressErrors.pincode && (
@@ -661,9 +567,12 @@ const Checkout: React.FC = () => {
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="state">State</Label>
-                    <Select value={address.state} onValueChange={(value) => setAddress({...address, state: value, city: ''})}>
-                      <SelectTrigger>
+                    <Label htmlFor="state">State *</Label>
+                    <Select 
+                      value={address.state} 
+                      onValueChange={(value) => setAddress({...address, state: value, city: ''})}
+                    >
+                      <SelectTrigger className={addressErrors.state ? 'border-red-500' : ''}>
                         <SelectValue placeholder="Select State" />
                       </SelectTrigger>
                       <SelectContent>
@@ -677,9 +586,13 @@ const Checkout: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="city">City</Label>
-                    <Select value={address.city} onValueChange={(value) => setAddress({...address, city: value})}>
-                      <SelectTrigger>
+                    <Label htmlFor="city">City *</Label>
+                    <Select 
+                      value={address.city} 
+                      onValueChange={(value) => setAddress({...address, city: value})}
+                      disabled={!address.state}
+                    >
+                      <SelectTrigger className={addressErrors.city ? 'border-red-500' : ''}>
                         <SelectValue placeholder={address.state ? 'Select City' : 'Select State first'} />
                       </SelectTrigger>
                       <SelectContent>
@@ -695,11 +608,12 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="houseNo">House No., Building Name</Label>
+                  <Label htmlFor="houseNo">House No., Building Name *</Label>
                   <Input
                     id="houseNo"
                     value={address.houseNo}
                     onChange={(e) => setAddress({...address, houseNo: e.target.value})}
+                    className={addressErrors.houseNo ? 'border-red-500' : ''}
                     required
                   />
                   {addressErrors.houseNo && (
@@ -708,11 +622,12 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="roadName">Road name, Area, Colony</Label>
+                  <Label htmlFor="roadName">Road name, Area, Colony *</Label>
                   <Input
                     id="roadName"
                     value={address.roadName}
                     onChange={(e) => setAddress({...address, roadName: e.target.value})}
+                    className={addressErrors.roadName ? 'border-red-500' : ''}
                     required
                   />
                   {addressErrors.roadName && (
@@ -722,18 +637,19 @@ const Checkout: React.FC = () => {
               </form>
             </div>
 
-            <div className="mt-4 text-center">
+            {/* Security badges */}
+            <div className="mt-6 text-center">
               <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
                 <span className="flex items-center">
-                  <span className="w-4 h-4 bg-blue-500 rounded mr-1"></span>
+                  <span className="w-3 h-3 bg-blue-500 rounded-full mr-1"></span>
                   PCI DSS Certified
                 </span>
                 <span className="flex items-center">
-                  <span className="w-4 h-4 bg-green-500 rounded mr-1"></span>
-                  100% Secured Payments
+                  <span className="w-3 h-3 bg-green-500 rounded-full mr-1"></span>
+                  100% Secured
                 </span>
                 <span className="flex items-center">
-                  <span className="w-4 h-4 bg-purple-500 rounded mr-1"></span>
+                  <span className="w-3 h-3 bg-purple-500 rounded-full mr-1"></span>
                   Verified Merchant
                 </span>
               </div>
@@ -743,136 +659,96 @@ const Checkout: React.FC = () => {
 
         {/* Step 3: Payment */}
         {currentStep === 3 && (
-          <div className="p-4">
-            <div className="bg-white rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Select Payment Method</h3>
-                <div className="text-right">
-                  <div className="text-xs text-blue-600">100% SAFE</div>
-                  <div className="text-xs text-blue-600">PAYMENTS</div>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 p-3 rounded-lg mb-6 flex items-center">
-                <span className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center mr-3 text-white text-xs">
-                  pay
-                </span>
-                <span className="text-blue-600 font-medium">Pay online & get EXTRA ₹33 off</span>
-              </div>
-
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-3">PAY ONLINE</h4>
-                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="upi" 
-                      checked={selectedPayment === 'upi'}
-                      onChange={(e) => setSelectedPayment(e.target.value)}
-                      className="mr-3"
-                    />
-                    <span className="w-8 h-6 bg-blue-500 rounded flex items-center justify-center mr-3 text-white text-xs">
-                      UPI
-                    </span>
-                    <span>UPI(GPay/PhonePe/Paytm)</span>
-                  </label>
-                  {selectedPayment === 'upi' && (
-                    <div className="mt-3 space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          className={`px-3 py-1 rounded border ${selectedUpiProvider === 'gpay' ? 'bg-purple-50 border-purple-400' : 'border-gray-300'}`} 
-                          onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('gpay'); }}
-                        >
-                          GPay
-                        </button>
-                        <button 
-                          className={`px-3 py-1 rounded border ${selectedUpiProvider === 'phonepe' ? 'bg-purple-50 border-purple-400' : 'border-gray-300'}`} 
-                          onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('phonepe'); }}
-                        >
-                          PhonePe
-                        </button>
-                        <button 
-                          className={`px-3 py-1 rounded border ${selectedUpiProvider === 'paytm' ? 'bg-purple-50 border-purple-400' : 'border-gray-300'}`} 
-                          onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('paytm'); }}
-                        >
-                          Paytm
-                        </button>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-600">Your UPI ID</label>
-                        <div className="relative">
-                          <input 
-                            className="mt-1 w-full border rounded px-3 py-2 text-sm pr-10" 
-                            placeholder="e.g. username@okicici" 
-                            value={upiId} 
-                            onChange={(e) => handleUPIChange(e.target.value)}
-                          />
-                          {isValidatingUPI && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-                        {upiValidationStatus && (
-                          <p className={`text-xs mt-1 ${upiValidationStatus.isValid ? 'text-green-600' : 'text-red-500'}`}>
-                            {upiValidationStatus.message}
-                          </p>
-                        )}
-                      </div>
+          <div className="p-4 space-y-4">
+            {/* Price Summary */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h3 className="font-semibold mb-3">Order Summary</h3>
+              {(() => {
+                const { subtotal, discount, total } = getDiscountInfo();
+                return (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Items Total:</span>
+                      <span>₹{subtotal}</span>
                     </div>
-                  )}
-                </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Discount (Ganesh Offer):</span>
+                        <span>-₹{discount}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span>Delivery:</span>
+                      <span className="text-green-600">FREE</span>
+                    </div>
+                    <hr className="border-gray-200" />
+                    <div className="flex justify-between font-semibold text-base">
+                      <span>Total Amount:</span>
+                      <span className="text-purple-600">₹{total}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
 
-                {/* Additional payment methods can be added here */}
-                <div className="border rounded-lg p-4 opacity-60">
-                  <h4 className="font-medium mb-3">OTHER METHODS</h4>
-                  <div className="space-y-2">
-                    <label className="flex items-center p-2 border rounded cursor-not-allowed opacity-50">
-                      <input type="radio" name="payment" value="card" disabled className="mr-3" />
-                      <span className="text-sm">Credit/Debit Card (Coming Soon)</span>
-                    </label>
-                    <label className="flex items-center p-2 border rounded cursor-not-allowed opacity-50">
-                      <input type="radio" name="payment" value="netbanking" disabled className="mr-3" />
-                      <span className="text-sm">Net Banking (Coming Soon)</span>
-                    </label>
-                    <label className="flex items-center p-2 border rounded cursor-not-allowed opacity-50">
-                      <input type="radio" name="payment" value="wallet" disabled className="mr-3" />
-                      <span className="text-sm">Wallet (Coming Soon)</span>
-                    </label>
+            {/* Payment Method */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold">Payment Method</h3>
+                <div className="text-right">
+                  <div className="text-xs text-green-600 font-medium">100% SAFE</div>
+                  <div className="text-xs text-green-600 font-medium">PAYMENTS</div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg mb-4 border border-purple-200">
+                <div className="flex items-center">
+                  <span className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center mr-3 text-white text-xs font-bold">
+                    LG
+                  </span>
+                  <span className="text-purple-700 font-medium">Pay securely with LG-Pay</span>
+                </div>
+                <p className="text-xs text-purple-600 mt-1">Multiple payment options available</p>
+              </div>
+
+              <div className="border rounded-lg p-4">
+                <div className="flex items-center p-3 border-2 border-purple-200 rounded-lg bg-purple-50">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="lgpay" 
+                    checked={true}
+                    readOnly
+                    className="mr-3 accent-purple-600"
+                  />
+                  <div className="flex items-center flex-1">
+                    <span className="w-8 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded flex items-center justify-center mr-3 text-white text-xs font-bold">
+                      PAY
+                    </span>
+                    <div>
+                      <span className="font-medium">Online Payment</span>
+                      <p className="text-xs text-gray-600">UPI, Cards, Net Banking, Wallets</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 space-y-2">
-                <div className="flex justify-between">
-                  <span>Shipping:</span>
-                  <span className="text-green-600 font-medium">FREE</span>
+              <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center text-green-700 text-sm">
+                  <span className="mr-2">🔒</span>
+                  <span>Your payment information is encrypted and secure</span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Total Product Price:</span>
-                  <span>₹{getTotalPrice()}.00</span>
-                </div>
-                {(() => {
-                  const quantity = cart.reduce((s, i) => s + i.quantity, 0);
-                  const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
-                  return discount > 0 ? (
-                    <div className="flex justify-between text-green-600">
-                      <span>Ganesh Offer (30% off)</span>
-                      <span>-₹{discount}.00</span>
-                    </div>
-                  ) : null;
-                })()}
-                <hr />
-                <div className="flex justify-between font-semibold">
-                  <span>Order Total:</span>
-                  {(() => {
-                    const quantity = cart.reduce((s, i) => s + i.quantity, 0);
-                    const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
-                    const total = getTotalPrice() - discount;
-                    return <span>₹{total}.00</span>;
-                  })()}
-                </div>
+              </div>
+            </div>
+
+            {/* Delivery Address Summary */}
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <h4 className="font-medium mb-2">Deliver to:</h4>
+              <div className="text-sm text-gray-600">
+                <div className="font-medium text-gray-900">{address.fullName}</div>
+                <div>{address.houseNo}, {address.roadName}</div>
+                <div>{address.city}, {address.state} - {address.pincode}</div>
+                <div>Mobile: {address.mobile}</div>
               </div>
             </div>
           </div>
@@ -881,82 +757,69 @@ const Checkout: React.FC = () => {
         {/* Step 4: Order Summary */}
         {currentStep === 4 && lastOrder && (
           <div className="p-4">
-            <div className="bg-white rounded-lg p-4 space-y-4">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-green-600 text-2xl">✓</span>
-                </div>
-                <h3 className="text-xl font-semibold text-green-600 mb-2">Payment Successful!</h3>
-                <p className="text-gray-600">Your order has been placed successfully</p>
+            <div className="bg-white rounded-lg p-6 shadow-sm text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-green-600 text-3xl">✓</span>
               </div>
+              <h2 className="text-2xl font-bold text-green-600 mb-2">Order Placed!</h2>
+              <p className="text-gray-600 mb-6">Your order has been successfully placed</p>
 
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
+              <div className="bg-gray-50 rounded-lg p-4 space-y-3 text-left mb-6">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Order ID:</span>
                   <span className="font-medium">{lastOrder.id}</span>
                 </div>
-                {lastOrder.paymentId && (
+                {lastOrder.orderSN && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Payment ID:</span>
-                    <span className="font-medium text-xs">{lastOrder.paymentId}</span>
+                    <span className="text-gray-600">Order SN:</span>
+                    <span className="font-medium">{lastOrder.orderSN}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Payment Method:</span>
-                  <span className="font-medium capitalize">{lastOrder.paymentMethod}</span>
+                  <span className="font-medium capitalize">LG-Pay Online</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-600">Order Date:</span>
                   <span className="font-medium">{new Date(lastOrder.createdAt).toLocaleDateString()}</span>
                 </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">Delivery Address</h4>
-                <div className="text-sm text-gray-600">
-                  <div className="font-medium text-gray-900">{lastOrder.address.fullName}</div>
-                  <div>{lastOrder.address.houseNo}, {lastOrder.address.roadName}</div>
-                  <div>{lastOrder.address.city}, {lastOrder.address.state} - {lastOrder.address.pincode}</div>
-                  <div>Mobile: {lastOrder.address.mobile}</div>
+                <hr className="border-gray-200" />
+                <div className="flex justify-between font-semibold">
+                  <span>Total Paid:</span>
+                  <span className="text-green-600">₹{lastOrder.total}</span>
                 </div>
               </div>
 
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">Order Items</h4>
-                <div className="space-y-3">
+              {/* Order Items */}
+              <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+                <h4 className="font-medium mb-3">Items Ordered</h4>
+                <div className="space-y-2">
                   {lastOrder.items.map((item: OrderItem) => (
-                    <div key={`${item.id}-${item.size}`} className="flex justify-between items-center">
+                    <div key={`${item.id}-${item.size}`} className="flex justify-between items-center text-sm">
                       <div className="flex-1">
-                        <div className="font-medium text-sm">{item.name}</div>
-                        <div className="text-xs text-gray-600">Size: {item.size} • Qty: {item.quantity}</div>
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-gray-600">Size: {item.size} × {item.quantity}</div>
                       </div>
-                      <div className="font-medium">₹{item.price * item.quantity}.00</div>
+                      <div className="font-medium">₹{item.price * item.quantity}</div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>Total Paid</span>
-                  <span className="text-green-600">₹{lastOrder.total}.00</span>
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-4">
+              {/* Action Buttons */}
+              <div className="space-y-3">
                 <Button 
                   variant="outline" 
                   onClick={handleDownloadInvoice}
                   className="w-full"
                 >
-                  Download Invoice (PDF)
+                  Download Invoice
                 </Button>
                 <Button 
-                  variant="fashion" 
                   onClick={() => navigate('/orders')} 
-                  className="w-full"
+                  className="w-full bg-purple-600 hover:bg-purple-700"
                 >
-                  View All Orders
+                  Track Order
                 </Button>
                 <Button 
                   variant="outline" 
@@ -971,103 +834,99 @@ const Checkout: React.FC = () => {
         )}
       </main>
 
-      {/* Fixed Bottom Actions - constrained to mobile frame on desktop */}
-      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[430px] bg-white border-t p-4">
-        {currentStep === 1 && (
-          <>
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                {(() => { 
-                  const { subtotal, discount, total } = getDiscountInfo(); 
-                  return (
-                    <div className="font-semibold">
-                      {discount > 0 ? (
-                        <>
-                          <span className="line-through mr-2">₹{subtotal}.00</span>
-                          <span className="text-green-600">₹{total}.00</span>
-                        </>
-                      ) : (
-                        <span>₹{subtotal}.00</span>
-                      )}
-                    </div>
-                  ); 
-                })()}
-                <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
+      {/* Fixed Bottom Action Bar - Properly constrained */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40">
+        <div className="max-w-md mx-auto p-4">
+          {currentStep === 1 && (
+            <>
+              <div className="flex justify-between items-center mb-3">
+                <div>
+                  {(() => { 
+                    const { subtotal, discount, total } = getDiscountInfo(); 
+                    return (
+                      <div className="font-semibold text-lg">
+                        {discount > 0 ? (
+                          <>
+                            <span className="line-through text-gray-400 mr-2">₹{subtotal}</span>
+                            <span className="text-green-600">₹{total}</span>
+                          </>
+                        ) : (
+                          <span>₹{subtotal}</span>
+                        )}
+                      </div>
+                    ); 
+                  })()}
+                  <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
+                </div>
               </div>
-            </div>
+              <Button 
+                size="lg" 
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
+                disabled={cart.length === 0}
+                onClick={() => {
+                  if (cart.length === 0) {
+                    toast({ title: 'Your cart is empty' });
+                    return;
+                  }
+                  setCurrentStep(2);
+                }}
+              >
+                Continue to Address
+              </Button>
+            </>
+          )}
+          
+          {currentStep === 2 && (
             <Button 
-              variant="fashion" 
               size="lg" 
-              className="w-full"
-              disabled={cart.length === 0}
-              onClick={() => {
-                if (cart.length === 0) {
-                  toast({ title: 'Your cart is empty' });
-                  return;
-                }
-                setCurrentStep(2);
-              }}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
+              type="submit"
+              form="address-form"
             >
-              Continue
+              Save Address & Continue
             </Button>
-          </>
-        )}
-        
-        {currentStep === 2 && (
-          <Button 
-            variant="fashion" 
-            size="lg" 
-            className="w-full"
-            type="submit"
-            form="address-form"
-          >
-            Save Address and Continue
-          </Button>
-        )}
-        
-        {currentStep === 3 && (
-          <>
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                {(() => { 
-                  const { subtotal, discount, total } = getDiscountInfo(); 
-                  return (
-                    <div className="font-semibold">
-                      {discount > 0 ? (
-                        <>
-                          <span className="line-through mr-2">₹{subtotal}.00</span>
-                          <span className="text-green-600">₹{total}.00</span>
-                        </>
-                      ) : (
-                        <span>₹{subtotal}.00</span>
-                      )}
-                    </div>
-                  ); 
-                })()}
-                <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
+          )}
+          
+          {currentStep === 3 && (
+            <>
+              <div className="flex justify-between items-center mb-3">
+                <div>
+                  {(() => { 
+                    const { subtotal, discount, total } = getDiscountInfo(); 
+                    return (
+                      <div className="font-semibold text-lg">
+                        {discount > 0 ? (
+                          <>
+                            <span className="line-through text-gray-400 mr-2">₹{subtotal}</span>
+                            <span className="text-green-600">₹{total}</span>
+                          </>
+                        ) : (
+                          <span>₹{subtotal}</span>
+                        )}
+                      </div>
+                    ); 
+                  })()}
+                  <div className="text-sm text-blue-600">Secure Payment with LG-Pay</div>
+                </div>
               </div>
-            </div>
-            <Button 
-              variant="fashion" 
-              size="lg" 
-              className="w-full"
-              onClick={handlePayment}
-              disabled={
-                isProcessingPayment || 
-                (selectedPayment === 'upi' && (!upiId.trim() || (upiValidationStatus && !upiValidationStatus.isValid)))
-              }
-            >
-              {isProcessingPayment ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Processing Payment...
-                </>
-              ) : (
-                'Pay Now'
-              )}
-            </Button>
-          </>
-        )}
+              <Button 
+                size="lg" 
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
+                onClick={handlePayment}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Processing...
+                  </>
+                ) : (
+                  'Place Order & Pay'
+                )}
+              </Button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

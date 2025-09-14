@@ -365,7 +365,7 @@ const ProductDetail = () => {
                   </div>
                 </div>
                 {/* Inline actions (visible above the fixed bar too) */}
-                {/* <div className="flex space-x-3 mt-4">
+                <div className="flex space-x-3 mt-4">
                   <Button variant="fashionOutline" size="lg" className="flex-1" onClick={handleAddToCart}>
                     <ShoppingCart className="w-4 h-4 mr-2" />
                     Add to Cart
@@ -373,7 +373,7 @@ const ProductDetail = () => {
                   <Button variant="fashion" size="lg" className="flex-1" onClick={handleBuyNow}>
                     Buy Now
                   </Button>
-                </div> */}
+                </div>
               </div>
             </div>
           </div>

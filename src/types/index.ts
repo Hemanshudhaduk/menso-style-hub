@@ -71,7 +71,7 @@ export interface Address {
 }
 
 // Order status type
-export type OrderStatus = 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type OrderStatus = 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'confirmed';
 
 // Order item interface (simplified version of CartItem for orders)
 export interface OrderItem {
@@ -83,16 +83,16 @@ export interface OrderItem {
   quantity: number;
 }
 
-// Main order interface
+// Main order interface (Updated for LG-Pay)
 export interface Order {
   id: string;
   createdAt: string; // ISO date string
   items: OrderItem[];
   total: number;
   address: Address;
-  razorpayOrderId?: string;
+  orderSN?: string; // LG-Pay order serial number
   paymentId?: string;
-  paymentMethod: string; // Changed from union type to string for more flexibility
+  paymentMethod: string;
   status: OrderStatus;
 }
 
@@ -138,7 +138,7 @@ export interface LocationData {
 // Utility function types
 export type ComputeDiscountFunction = (subtotal: number, quantity: number) => number;
 
-// Payment related types
+// Payment related types (Simplified for LG-Pay)
 export interface PaymentOptions {
   upi: boolean;
   card: boolean;
@@ -152,12 +152,9 @@ export interface CustomerDetails {
   contact: string;
 }
 
-export interface OrderCreationData {
-  amount: number;
-  currency: string;
-  upiId?: string;
-  paymentMethod: string;
-  customerDetails: CustomerDetails;
+// LG-Pay order creation data (Simplified)
+export interface LGPayOrderData {
+  amount: number; // Amount in paisa
 }
 
 // API Response types
@@ -166,49 +163,87 @@ export interface APIBaseResponse {
   message: string;
 }
 
-export interface UPIValidationResponse extends APIBaseResponse {
-  // Add specific UPI validation fields if needed
+// LG-Pay specific response types
+export interface LGPayOrderResponse extends APIBaseResponse {
+  order_sn: string;
+  response: {
+    pay_url?: string;
+    payment_url?: string;
+    status?: string;
+    [key: string]: any; // Allow for additional LG-Pay response fields
+  };
 }
 
+// Webhook response from LG-Pay
+export interface LGPayWebhookData {
+  order_sn: string;
+  status: string;
+  trade_status?: string;
+  money: number;
+  sign: string;
+  [key: string]: any; // Allow for additional webhook fields
+}
+
+// Enhanced Order interface with LG-Pay details
+export interface EnhancedOrder extends Order {
+  orderSN?: string;
+  lgPayResponse?: any;
+}
+
+// Payment verification response (Generic)
+export interface PaymentVerificationResponse extends APIBaseResponse {
+  orderId?: string;
+  status?: string;
+  tradeStatus?: string;
+  amount?: number;
+}
+
+// Pending order info (for sessionStorage)
+export interface PendingOrderInfo {
+  orderId: string;
+  orderSN: string;
+  amount: number;
+}
+
+// Payment return URL parameters
+export interface PaymentReturnParams {
+  status: 'success' | 'failed' | 'pending';
+  order_sn: string;
+  [key: string]: string; // Allow for additional return parameters
+}
+
+// Global window extensions for LG-Pay integration
+declare global {
+  interface Window {
+    upiValidationTimeout?: NodeJS.Timeout;
+  }
+}
+
+// Legacy types (kept for backward compatibility but deprecated)
+/**
+ * @deprecated Use LGPayOrderResponse instead
+ */
 export interface OrderCreationResponse extends APIBaseResponse {
   orderId: string;
   amount: number;
   currency: string;
 }
 
-export interface PaymentVerificationResponse extends APIBaseResponse {
-  // Add specific payment verification fields if needed
+/**
+ * @deprecated UPI validation is now handled by LG-Pay gateway
+ */
+export interface UPIValidationResponse extends APIBaseResponse {
+  upiId?: string;
+  isKnownProvider?: boolean;
 }
 
-// Razorpay specific types
-export interface RazorpayResponse {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-}
-
-export interface RazorpayOptions {
-  key: string;
+/**
+ * @deprecated Use LGPayOrderData instead
+ */
+export interface OrderCreationData {
   amount: number;
   currency: string;
-  name: string;
-  description: string;
-  order_id: string;
-  prefill: {
-    name: string;
-    email: string;
-    contact: string;
-  };
-  notes: {
-    address: string;
-    upi_id: string;
-  };
-  theme: {
-    color: string;
-  };
-  method: PaymentOptions;
-  handler: (response: RazorpayResponse) => Promise<void>;
-  modal: {
-    ondismiss: () => void;
-  };
+  upiId?: string;
+  paymentMethod: string;
+  customerDetails: CustomerDetails;
 }
