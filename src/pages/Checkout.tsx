@@ -16,7 +16,7 @@ import { useUser } from '@/hooks/useUser';
 // API configuration for LG-Pay backend
 const API_BASE_URL: string = 'https://messho-backend.vercel.app';
 
-// LG-Pay API response types
+// Enhanced LG-Pay API response types
 interface LGPayResponse {
   success: boolean;
   message?: string;
@@ -24,20 +24,44 @@ interface LGPayResponse {
   response?: {
     pay_url?: string;
     payment_url?: string;
+    payUrl?: string;
+    url?: string;
+    redirect_url?: string;
+    qr_url?: string;
+    paylink?: string;
+    link?: string;
     status?: string;
     [key: string]: any;
   };
+  debug?: {
+    amountSentInPaisa?: number;
+    amountSentInRupees?: number;
+    originalResponse?: any;
+    responseType?: string;
+    possibleIssue?: string;
+  };
 }
 
-// Simplified API service for LG-Pay
+// API service for LG-Pay
 const lgPayAPI = {
   createOrder: async (amount: number): Promise<LGPayResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/create-order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ amount })
-    });
-    return response.json();
+    console.log('🔵 Frontend: Creating order with amount (rupees):', amount);
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount })
+      });
+      
+      const data = await response.json();
+      console.log('📥 Frontend: Received response:', data);
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Frontend: API call failed:', error);
+      throw error;
+    }
   },
 
   checkHealth: async (): Promise<{ status: string; message: string }> => {
@@ -103,7 +127,6 @@ const Checkout: React.FC = () => {
   // Check if cart is empty and redirect
   useEffect(() => {
     if (cart.length === 0 && currentStep !== 4) {
-      // Allow staying on step 4 (summary) even if cart is empty
       const timer = setTimeout(() => {
         if (currentStep !== 4) {
           navigate('/');
@@ -150,20 +173,35 @@ const Checkout: React.FC = () => {
   };
 
   const handlePayment = async (): Promise<void> => {
+    console.log('🎯 Payment process started...');
     setIsProcessingPayment(true);
 
     try {
-      // Calculate total amount in rupees
+      // Calculate total amount in rupees (backend will convert to paisa)
       const { total } = getDiscountInfo();
+      console.log('💰 Frontend: Payment amount (rupees):', total);
       
       // Create order with LG-Pay
       const orderResponse = await lgPayAPI.createOrder(total);
+      
+      console.log('📥 Frontend: Order response received:', orderResponse);
 
       if (!orderResponse.success) {
+        console.error('❌ Order creation failed:', orderResponse);
+        
+        // Show detailed error message
+        let errorMessage = orderResponse.message || 'Unable to create order.';
+        
+        if (orderResponse.debug?.possibleIssue) {
+          errorMessage += ` Possible issue: ${orderResponse.debug.possibleIssue}`;
+        }
+        
         toast({ 
           title: 'Order Creation Failed', 
-          description: orderResponse.message || 'Unable to create order. Please try again.' 
+          description: errorMessage,
+          variant: 'destructive'
         });
+        
         return;
       }
 
@@ -182,29 +220,55 @@ const Checkout: React.FC = () => {
         amount: total
       }));
 
-      // Check if we have a payment URL
-      const paymentUrl = orderResponse.response?.pay_url || orderResponse.response?.payment_url;
+      // Look for payment URL in response
+      const paymentUrl = orderResponse.response?.pay_url || 
+                        orderResponse.response?.payment_url ||
+                        orderResponse.response?.payUrl ||
+                        orderResponse.response?.url ||
+                        orderResponse.response?.redirect_url ||
+                        orderResponse.response?.qr_url ||
+                        orderResponse.response?.paylink ||
+                        orderResponse.response?.link;
+      
+      console.log('🔗 Detected payment URL:', paymentUrl);
       
       if (paymentUrl) {
-        // Redirect to LG-Pay payment page
-        window.location.href = paymentUrl;
-      } else {
-        // If no payment URL, show success (for testing purposes)
+        console.log('➡️  Redirecting to LG-Pay payment gateway...');
+        
         toast({
-          title: 'Order Created Successfully!',
-          description: `Order ${order.id} has been placed.`,
+          title: 'Redirecting to Payment',
+          description: 'Taking you to secure LG-Pay gateway...',
         });
         
-        clearCart();
-        setCurrentStep(4);
+        // Show a brief loading state, then redirect
+        setTimeout(() => {
+          console.log('🌐 Redirecting to:', paymentUrl);
+          window.location.href = paymentUrl;
+        }, 2000);
+        
+      } else {
+        console.log('⚠️  No payment URL found in response');
+        console.log('📋 Full response for analysis:', orderResponse);
+        
+        // Show error with debug info
+        toast({
+          title: 'Payment Gateway Error',
+          description: 'No payment URL received from LG-Pay. Please try again.',
+          variant: 'destructive'
+        });
+        
+        return;
       }
 
     } catch (error) {
-      console.error('Payment error:', error);
+      console.error('❌ Payment error:', error);
+      
       toast({
         title: 'Payment Error',
-        description: 'Something went wrong. Please try again.',
+        description: 'Network error occurred. Please check your connection and try again.',
+        variant: 'destructive'
       });
+      
     } finally {
       setIsProcessingPayment(false);
     }
@@ -272,7 +336,7 @@ const Checkout: React.FC = () => {
         </head>
         <body>
           <div class="header">
-            <div class="company-name">Your Store Name</div>
+            <div class="company-name">Messho Store</div>
             <div class="invoice-title">INVOICE</div>
           </div>
           
@@ -345,7 +409,6 @@ const Checkout: React.FC = () => {
     win.document.close();
     win.focus();
     
-    // Add a small delay before printing to ensure content is loaded
     setTimeout(() => {
       win.print();
     }, 500);
@@ -354,13 +417,13 @@ const Checkout: React.FC = () => {
   if (cart.length === 0 && currentStep < 4) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="text-center bg-white rounded-lg p-8 shadow-sm max-w-md w-full">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            🛒
+        <div className="text-center bg-white rounded-xl p-8 shadow-lg max-w-sm w-full">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-gray-400 text-2xl">🛒</span>
           </div>
-          <h2 className="text-xl font-semibold mb-2">Your cart is empty</h2>
-          <p className="text-gray-500 mb-6">Add some items to your cart to continue shopping</p>
-          <Button onClick={() => navigate('/')} className="w-full">
+          <h2 className="text-xl font-semibold mb-2 text-gray-800">Your cart is empty</h2>
+          <p className="text-gray-500 mb-6 text-sm">Add some items to your cart to continue shopping</p>
+          <Button onClick={() => navigate('/')} className="w-full bg-purple-600 hover:bg-purple-700">
             Continue Shopping
           </Button>
         </div>
@@ -370,15 +433,15 @@ const Checkout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - Fixed positioning */}
-      <header className="bg-white shadow-sm sticky top-0 z-50 border-b">
-        <div className="max-w-md mx-auto px-4 py-3">
+      {/* Header - Clean & Fixed */}
+      <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
+        <div className="w-full max-w-md mx-auto px-4 py-3">
           <div className="flex items-center">
             <button 
               onClick={() => navigate(-1)} 
-              className="mr-3 p-1 hover:bg-gray-100 rounded-full transition-colors"
+              className="mr-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
-              <ArrowLeft className="text-gray-600 h-6 w-6" />
+              <ArrowLeft className="text-gray-600 h-5 w-5" />
             </button>
             <h1 className="text-lg font-semibold text-gray-900">
               {currentStep === 1 ? 'Cart' : 
@@ -389,28 +452,32 @@ const Checkout: React.FC = () => {
         </div>
       </header>
 
-      {/* Stepper - Fixed width container */}
-      <div className="bg-white border-b">
-        <div className="max-w-md mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+      {/* Stepper - Left Aligned with Small Circles */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="w-full max-w-md mx-auto px-4 py-3">
+          <div className="flex items-center w-full">
             {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center flex-1">
+              <div key={step.id} className="flex items-center" style={{ flex: index === 3 ? '1.2' : '1' }}>
                 <div className="flex items-center">
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${
                     step.completed 
                       ? 'bg-purple-600 text-white' 
                       : currentStep === step.id
                       ? 'bg-purple-600 text-white'
-                      : 'bg-gray-300 text-gray-600'
+                      : 'bg-gray-300 text-gray-500'
                   }`}>
                     {step.completed ? '✓' : step.id}
                   </div>
-                  <span className="ml-2 text-xs font-medium truncate max-w-[60px] sm:max-w-[80px]">
+                  <span className={`ml-1 text-[9px] font-normal ${
+                    step.completed || currentStep === step.id ? 'text-purple-600' : 'text-gray-500'
+                  } whitespace-nowrap`}>
                     {step.name}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className="flex-1 h-px bg-gray-300 mx-2 min-w-[20px]"></div>
+                  <div className={`h-px flex-1 mx-2 ${
+                    step.completed ? 'bg-purple-300' : 'bg-gray-300'
+                  }`}></div>
                 )}
               </div>
             ))}
@@ -418,48 +485,48 @@ const Checkout: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content - Constrained container */}
-      <main className="max-w-md mx-auto pb-24">
+      {/* Main Content - Properly Constrained */}
+      <main className="w-full max-w-md mx-auto pb-28 min-h-screen">
         {/* Step 1: Cart */}
         {currentStep === 1 && (
-          <div className="p-4 space-y-4">
+          <div className="p-4 space-y-3">
             {cart.map((item: CartItem) => (
-              <div key={`${item.id}-${item.size}`} className="bg-white rounded-lg p-4 shadow-sm">
-                <div className="flex space-x-4">
+              <div key={`${item.id}-${item.size}`} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="flex space-x-3">
                   <img 
                     src={item.image} 
                     alt={item.name}
-                    className="w-20 h-24 object-cover rounded-lg flex-shrink-0"
+                    className="w-18 h-20 object-cover rounded-lg flex-shrink-0"
                   />
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-sm mb-1 line-clamp-2">{item.name}</h3>
+                    <h3 className="font-medium text-sm mb-1 line-clamp-2 text-gray-800">{item.name}</h3>
                     <div className="flex items-center space-x-2 mb-2">
-                      <span className="font-semibold text-purple-600">₹{item.price}</span>
-                      <span className="text-gray-400 line-through text-sm">₹{item.originalPrice}</span>
+                      <span className="font-bold text-purple-600">₹{item.price}</span>
+                      <span className="text-gray-400 line-through text-xs">₹{item.originalPrice}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-3">Size: {item.size}</p>
+                    <p className="text-xs text-gray-500 mb-2">Size: {item.size}</p>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
                         <button 
                           onClick={() => updateQuantity(item.id, item.size, -1)}
-                          className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-purple-400 transition-colors"
+                          className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm"
                           disabled={item.quantity <= 1}
                         >
                           -
                         </button>
-                        <span className="min-w-[50px] text-center font-medium">
-                          Qty: {item.quantity.toString().padStart(2, '0')}
+                        <span className="min-w-[40px] text-center font-medium text-sm">
+                          {item.quantity.toString().padStart(2, '0')}
                         </span>
                         <button 
                           onClick={() => updateQuantity(item.id, item.size, 1)}
-                          className="w-8 h-8 rounded-full border-2 border-gray-300 flex items-center justify-center hover:border-purple-400 transition-colors"
+                          className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm"
                         >
                           +
                         </button>
                       </div>
                       <button 
                         onClick={() => removeFromCart(item.id, item.size)}
-                        className="text-red-400 hover:text-red-600 p-2 transition-colors"
+                        className="text-red-400 hover:text-red-600 p-1 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -469,23 +536,24 @@ const Checkout: React.FC = () => {
               </div>
             ))}
 
-            {/* Cart Summary */}
-            <div className="bg-white rounded-lg p-4 shadow-sm">
+            {/* Cart Summary - Improved Layout */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mt-4">
+              <h3 className="font-semibold text-gray-800 mb-3">Order Summary</h3>
               {(() => {
                 const quantity = cart.reduce((s, i) => s + i.quantity, 0);
                 const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
                 const finalTotal = getTotalPrice() - discount;
                 return (
-                  <div className="space-y-3">
+                  <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Cart Total:</span>
+                      <span className="text-gray-600">Cart Total:</span>
                       {discount > 0 ? (
                         <span className="font-semibold">
                           <span className="line-through text-gray-400 mr-2">₹{getTotalPrice()}</span>
                           <span className="text-green-600">₹{finalTotal}</span>
                         </span>
                       ) : (
-                        <span className="font-semibold">₹{getTotalPrice()}</span>
+                        <span className="font-semibold text-gray-800">₹{getTotalPrice()}</span>
                       )}
                     </div>
                     {discount > 0 && (
@@ -495,12 +563,12 @@ const Checkout: React.FC = () => {
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span>Shipping:</span>
+                      <span className="text-gray-600">Shipping:</span>
                       <span className="text-green-600 font-medium">FREE</span>
                     </div>
-                    <hr className="border-gray-200" />
-                    <div className="flex justify-between font-semibold text-lg">
-                      <span>To Pay:</span>
+                    <hr className="border-gray-200 my-2" />
+                    <div className="flex justify-between font-bold text-lg">
+                      <span className="text-gray-800">To Pay:</span>
                       <span className="text-purple-600">₹{finalTotal}</span>
                     </div>
                   </div>
@@ -513,8 +581,8 @@ const Checkout: React.FC = () => {
         {/* Step 2: Address */}
         {currentStep === 2 && (
           <div className="p-4">
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold mb-4 flex items-center text-gray-800">
                 <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                   📍
                 </span>
@@ -523,12 +591,12 @@ const Checkout: React.FC = () => {
               
               <form id="address-form" onSubmit={handleAddressSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="fullName">Full Name *</Label>
+                  <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Name *</Label>
                   <Input
                     id="fullName"
                     value={address.fullName}
                     onChange={(e) => setAddress({...address, fullName: e.target.value})}
-                    className={addressErrors.fullName ? 'border-red-500' : ''}
+                    className={`mt-1 ${addressErrors.fullName ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.fullName && (
@@ -537,13 +605,13 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="mobile">Mobile Number *</Label>
+                  <Label htmlFor="mobile" className="text-sm font-medium text-gray-700">Mobile Number *</Label>
                   <Input
                     id="mobile"
                     type="tel"
                     value={address.mobile}
                     onChange={(e) => setAddress({...address, mobile: e.target.value})}
-                    className={addressErrors.mobile ? 'border-red-500' : ''}
+                    className={`mt-1 ${addressErrors.mobile ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.mobile && (
@@ -552,12 +620,12 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="pincode">Pincode *</Label>
+                  <Label htmlFor="pincode" className="text-sm font-medium text-gray-700">Pincode *</Label>
                   <Input
                     id="pincode"
                     value={address.pincode}
                     onChange={(e) => setAddress({...address, pincode: e.target.value})}
-                    className={addressErrors.pincode ? 'border-red-500' : ''}
+                    className={`mt-1 ${addressErrors.pincode ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.pincode && (
@@ -565,14 +633,14 @@ const Checkout: React.FC = () => {
                   )}
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="state">State *</Label>
+                    <Label htmlFor="state" className="text-sm font-medium text-gray-700">State *</Label>
                     <Select 
                       value={address.state} 
                       onValueChange={(value) => setAddress({...address, state: value, city: ''})}
                     >
-                      <SelectTrigger className={addressErrors.state ? 'border-red-500' : ''}>
+                      <SelectTrigger className={`mt-1 ${addressErrors.state ? 'border-red-500' : 'border-gray-200'} rounded-lg`}>
                         <SelectValue placeholder="Select State" />
                       </SelectTrigger>
                       <SelectContent>
@@ -586,13 +654,13 @@ const Checkout: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="city">City *</Label>
+                    <Label htmlFor="city" className="text-sm font-medium text-gray-700">City *</Label>
                     <Select 
                       value={address.city} 
                       onValueChange={(value) => setAddress({...address, city: value})}
                       disabled={!address.state}
                     >
-                      <SelectTrigger className={addressErrors.city ? 'border-red-500' : ''}>
+                      <SelectTrigger className={`mt-1 ${addressErrors.city ? 'border-red-500' : 'border-gray-200'} rounded-lg`}>
                         <SelectValue placeholder={address.state ? 'Select City' : 'Select State first'} />
                       </SelectTrigger>
                       <SelectContent>
@@ -608,12 +676,12 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="houseNo">House No., Building Name *</Label>
+                  <Label htmlFor="houseNo" className="text-sm font-medium text-gray-700">House No., Building Name *</Label>
                   <Input
                     id="houseNo"
                     value={address.houseNo}
                     onChange={(e) => setAddress({...address, houseNo: e.target.value})}
-                    className={addressErrors.houseNo ? 'border-red-500' : ''}
+                    className={`mt-1 ${addressErrors.houseNo ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.houseNo && (
@@ -622,12 +690,12 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="roadName">Road name, Area, Colony *</Label>
+                  <Label htmlFor="roadName" className="text-sm font-medium text-gray-700">Road name, Area, Colony *</Label>
                   <Input
                     id="roadName"
                     value={address.roadName}
                     onChange={(e) => setAddress({...address, roadName: e.target.value})}
-                    className={addressErrors.roadName ? 'border-red-500' : ''}
+                    className={`mt-1 ${addressErrors.roadName ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.roadName && (
@@ -639,18 +707,18 @@ const Checkout: React.FC = () => {
 
             {/* Security badges */}
             <div className="mt-6 text-center">
-              <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
+              <div className="flex items-center justify-center space-x-3 text-xs text-gray-500">
                 <span className="flex items-center">
-                  <span className="w-3 h-3 bg-blue-500 rounded-full mr-1"></span>
-                  PCI DSS Certified
+                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                  PCI DSS
                 </span>
                 <span className="flex items-center">
-                  <span className="w-3 h-3 bg-green-500 rounded-full mr-1"></span>
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
                   100% Secured
                 </span>
                 <span className="flex items-center">
-                  <span className="w-3 h-3 bg-purple-500 rounded-full mr-1"></span>
-                  Verified Merchant
+                  <span className="w-2 h-2 bg-purple-500 rounded-full mr-1"></span>
+                  Verified
                 </span>
               </div>
             </div>
@@ -661,15 +729,15 @@ const Checkout: React.FC = () => {
         {currentStep === 3 && (
           <div className="p-4 space-y-4">
             {/* Price Summary */}
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <h3 className="font-semibold mb-3">Order Summary</h3>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <h3 className="font-semibold mb-3 text-gray-800">Order Summary</h3>
               {(() => {
                 const { subtotal, discount, total } = getDiscountInfo();
                 return (
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Items Total:</span>
-                      <span>₹{subtotal}</span>
+                      <span className="text-gray-600">Items Total:</span>
+                      <span className="text-gray-800">₹{subtotal}</span>
                     </div>
                     {discount > 0 && (
                       <div className="flex justify-between text-green-600">
@@ -678,12 +746,12 @@ const Checkout: React.FC = () => {
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span>Delivery:</span>
-                      <span className="text-green-600">FREE</span>
+                      <span className="text-gray-600">Delivery:</span>
+                      <span className="text-green-600 font-medium">FREE</span>
                     </div>
                     <hr className="border-gray-200" />
-                    <div className="flex justify-between font-semibold text-base">
-                      <span>Total Amount:</span>
+                    <div className="flex justify-between font-bold text-base">
+                      <span className="text-gray-800">Total Amount:</span>
                       <span className="text-purple-600">₹{total}</span>
                     </div>
                   </div>
@@ -692,27 +760,29 @@ const Checkout: React.FC = () => {
             </div>
 
             {/* Payment Method */}
-            <div className="bg-white rounded-lg p-4 shadow-sm">
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Payment Method</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Payment Method</h3>
                 <div className="text-right">
                   <div className="text-xs text-green-600 font-medium">100% SAFE</div>
                   <div className="text-xs text-green-600 font-medium">PAYMENTS</div>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg mb-4 border border-purple-200">
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg mb-4 border border-purple-100">
                 <div className="flex items-center">
                   <span className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center mr-3 text-white text-xs font-bold">
                     LG
                   </span>
-                  <span className="text-purple-700 font-medium">Pay securely with LG-Pay</span>
+                  <div>
+                    <span className="text-purple-700 font-medium block">Pay securely with LG-Pay</span>
+                    <p className="text-xs text-purple-600">UPI, Cards, Net Banking & Wallets</p>
+                  </div>
                 </div>
-                <p className="text-xs text-purple-600 mt-1">Multiple payment options available</p>
               </div>
 
-              <div className="border rounded-lg p-4">
-                <div className="flex items-center p-3 border-2 border-purple-200 rounded-lg bg-purple-50">
+              <div className="border-2 border-purple-200 rounded-lg p-3 bg-purple-50">
+                <div className="flex items-center">
                   <input 
                     type="radio" 
                     name="payment" 
@@ -726,8 +796,8 @@ const Checkout: React.FC = () => {
                       PAY
                     </span>
                     <div>
-                      <span className="font-medium">Online Payment</span>
-                      <p className="text-xs text-gray-600">UPI, Cards, Net Banking, Wallets</p>
+                      <span className="font-medium text-gray-800">Online Payment</span>
+                      <p className="text-xs text-gray-600">Multiple payment options</p>
                     </div>
                   </div>
                 </div>
@@ -742,8 +812,8 @@ const Checkout: React.FC = () => {
             </div>
 
             {/* Delivery Address Summary */}
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <h4 className="font-medium mb-2">Deliver to:</h4>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <h4 className="font-medium mb-2 text-gray-800">Deliver to:</h4>
               <div className="text-sm text-gray-600">
                 <div className="font-medium text-gray-900">{address.fullName}</div>
                 <div>{address.houseNo}, {address.roadName}</div>
@@ -757,7 +827,7 @@ const Checkout: React.FC = () => {
         {/* Step 4: Order Summary */}
         {currentStep === 4 && lastOrder && (
           <div className="p-4">
-            <div className="bg-white rounded-lg p-6 shadow-sm text-center">
+            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-green-600 text-3xl">✓</span>
               </div>
@@ -834,34 +904,34 @@ const Checkout: React.FC = () => {
         )}
       </main>
 
-      {/* Fixed Bottom Action Bar - Properly constrained */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-40">
-        <div className="max-w-md mx-auto p-4">
+      {/* Fixed Bottom Action Bar - Mobile Optimized */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="w-full max-w-md mx-auto p-4">
           {currentStep === 1 && (
-            <>
-              <div className="flex justify-between items-center mb-3">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
                 <div>
                   {(() => { 
                     const { subtotal, discount, total } = getDiscountInfo(); 
                     return (
-                      <div className="font-semibold text-lg">
+                      <div className="font-bold text-lg">
                         {discount > 0 ? (
                           <>
-                            <span className="line-through text-gray-400 mr-2">₹{subtotal}</span>
+                            <span className="line-through text-gray-400 mr-2 text-sm">₹{subtotal}</span>
                             <span className="text-green-600">₹{total}</span>
                           </>
                         ) : (
-                          <span>₹{subtotal}</span>
+                          <span className="text-gray-800">₹{subtotal}</span>
                         )}
                       </div>
                     ); 
                   })()}
-                  <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
+                  <div className="text-xs text-blue-600 font-medium">VIEW PRICE DETAILS</div>
                 </div>
               </div>
               <Button 
                 size="lg" 
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl"
                 disabled={cart.length === 0}
                 onClick={() => {
                   if (cart.length === 0) {
@@ -873,13 +943,13 @@ const Checkout: React.FC = () => {
               >
                 Continue to Address
               </Button>
-            </>
+            </div>
           )}
           
           {currentStep === 2 && (
             <Button 
               size="lg" 
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl"
               type="submit"
               form="address-form"
             >
@@ -888,43 +958,43 @@ const Checkout: React.FC = () => {
           )}
           
           {currentStep === 3 && (
-            <>
-              <div className="flex justify-between items-center mb-3">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
                 <div>
                   {(() => { 
                     const { subtotal, discount, total } = getDiscountInfo(); 
                     return (
-                      <div className="font-semibold text-lg">
+                      <div className="font-bold text-lg">
                         {discount > 0 ? (
                           <>
-                            <span className="line-through text-gray-400 mr-2">₹{subtotal}</span>
+                            <span className="line-through text-gray-400 mr-2 text-sm">₹{subtotal}</span>
                             <span className="text-green-600">₹{total}</span>
                           </>
                         ) : (
-                          <span>₹{subtotal}</span>
+                          <span className="text-gray-800">₹{subtotal}</span>
                         )}
                       </div>
                     ); 
                   })()}
-                  <div className="text-sm text-blue-600">Secure Payment with LG-Pay</div>
+                  <div className="text-xs text-blue-600 font-medium">Secure Payment with LG-Pay</div>
                 </div>
               </div>
               <Button 
                 size="lg" 
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3"
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl"
                 onClick={handlePayment}
                 disabled={isProcessingPayment}
               >
                 {isProcessingPayment ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                    Processing...
+                    Connecting to LG-Pay...
                   </>
                 ) : (
                   'Place Order & Pay'
                 )}
               </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
