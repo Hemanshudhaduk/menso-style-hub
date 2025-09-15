@@ -596,7 +596,7 @@ export const products: Product[] = [
   {
   "id": "8popwm",
   "name": "Stylish Gym Vests",
-  "price": 99,
+  "price": 100,
   "originalPrice": 277,
   "discount": 64,
   "rating": 4.2,
@@ -670,7 +670,7 @@ export const products: Product[] = [
   {
     id: 2,
     name: "Vamika Pink Cotton Suit Set",
-    price: 79,
+    price: 99,
     originalPrice: 1949,
     discount: 96,
     rating: 4.5,

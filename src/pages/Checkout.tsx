@@ -46,11 +46,11 @@ interface LGPayResponse {
 // API service for LG-Pay - Simplified without minimum validation
 const lgPayAPI = {
   createOrder: async (amount: number): Promise<LGPayResponse> => {
-    console.log('🔵 Frontend: Creating order with amount (rupees):', amount);
+    // console.log('🔵 Frontend: Creating order with amount (rupees):', amount);
     
     // Basic validation - only check for valid number
     if (!amount || isNaN(amount) || amount <= 0) {
-      console.log('❌ Invalid amount:', amount);
+      // console.log('❌ Invalid amount:', amount);
       
       return {
         success: false,
@@ -62,7 +62,7 @@ const lgPayAPI = {
       };
     }
     
-    console.log('✅ Amount validation passed, proceeding with API call');
+    // console.log('✅ Amount validation passed, proceeding with API call');
     
     try {
       const response = await fetch(`${API_BASE_URL}/api/create-order`, {
@@ -79,11 +79,11 @@ const lgPayAPI = {
       });
       
       const data = await response.json();
-      console.log('📥 Frontend: Received response:', data);
+      // console.log('📥 Frontend: Received response:', data);
       
       return data;
     } catch (error) {
-      console.error('❌ Frontend: API call failed:', error);
+      // console.error('❌ Frontend: API call failed:', error);
       throw error;
     }
   },
@@ -133,21 +133,86 @@ const Checkout: React.FC = () => {
   const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
   const { placeOrder } = useOrders();
 
-  // Simplified discount calculation
-  const getDiscountInfo = (): { subtotal: number; discount: number; total: number } => {
+  // Enhanced order total calculation with minimum order logic
+  const getOrderTotal = (): { 
+    subtotal: number; 
+    discount: number; 
+    convenienceFee: number; 
+    total: number; 
+    isMinimumOrder: boolean;
+    shortfall: number;
+  } => {
     const quantity = cart.reduce((s, i) => s + i.quantity, 0);
     const subtotal = getTotalPrice();
     const discount = computeGaneshOfferDiscount(subtotal, quantity);
-    const total = Math.max(0, subtotal - discount); // Ensure non-negative
-    return { subtotal, discount, total };
+    const afterDiscount = Math.max(0, subtotal - discount);
+    
+    const MINIMUM_ORDER_VALUE = 101;
+    const isMinimumOrder = afterDiscount < MINIMUM_ORDER_VALUE;
+    const shortfall = isMinimumOrder ? (MINIMUM_ORDER_VALUE - afterDiscount) : 0;
+    const convenienceFee = shortfall; // Add convenience fee to meet minimum
+    const total = afterDiscount + convenienceFee;
+    
+    return { subtotal, discount, convenienceFee, total, isMinimumOrder, shortfall };
   };
 
-  const steps: CheckoutStep[] = [
-    { id: 1, name: 'Cart', completed: true },
+  // Minimum order suggestions for add-on products
+  const getMinimumOrderSuggestions = (): { 
+    showSuggestions: boolean; 
+    shortfall: number; 
+    suggestedProducts: any[] 
+  } => {
+    const { shortfall, isMinimumOrder } = getOrderTotal();
+    
+    if (isMinimumOrder && shortfall > 0) {
+      // Mock suggested products (replace with actual product data)
+      const suggestedProducts = [
+        { id: 'addon1', name: 'Gift Wrapping', price: 15, type: 'service' },
+        { id: 'addon2', name: 'Express Delivery', price: 25, type: 'service' },
+        { id: 'addon3', name: 'Delivery Protection', price: 9, type: 'service' },
+        { id: 'addon4', name: 'Premium Packaging', price: 20, type: 'service' }
+      ].filter(product => product.price <= shortfall + 20); // Show products within reasonable range
+      
+      return { showSuggestions: true, shortfall, suggestedProducts };
+    }
+    
+    return { showSuggestions: false, shortfall: 0, suggestedProducts: [] };
+  };
+
+  // Dynamic steps calculation
+  const getSteps = (): CheckoutStep[] => [
+    { id: 1, name: 'Cart', completed: currentStep > 1 },
     { id: 2, name: 'Address', completed: currentStep > 2 },
     { id: 3, name: 'Payment', completed: currentStep > 3 },
-    { id: 4, name: 'Summary', completed: false }
+    { id: 4, name: 'Summary', completed: currentStep > 4 }
   ];
+
+  // Navigation functions
+  const navigateToStep = (stepNumber: number): void => {
+    if (stepNumber < currentStep || stepNumber === 1) {
+      // console.log(`Navigating from step ${currentStep} to step ${stepNumber}`);
+      setCurrentStep(stepNumber);
+    }
+  };
+
+  const handleBackNavigation = (): void => {
+    switch (currentStep) {
+      case 1: // Cart - go back to home/previous page
+        navigate(-1);
+        break;
+      case 2: // Address - go back to Cart
+        setCurrentStep(1);
+        break;
+      case 3: // Payment - go back to Address
+        setCurrentStep(2);
+        break;
+      case 4: // Summary - go to orders page or home
+        navigate('/orders');
+        break;
+      default:
+        navigate(-1);
+    }
+  };
 
   // Check if cart is empty and redirect
   useEffect(() => {
@@ -198,17 +263,17 @@ const Checkout: React.FC = () => {
   };
 
   const handlePayment = async (): Promise<void> => {
-    console.log('🎯 Payment process started...');
+    // console.log('🎯 Payment process started...');
     setIsProcessingPayment(true);
 
     try {
       // Calculate total amount in rupees
-      const { total } = getDiscountInfo();
-      console.log('💰 Frontend: Payment amount (rupees):', total);
+      const { total } = getOrderTotal();
+      // console.log('💰 Frontend: Payment amount (rupees):', total);
       
       // Basic validation - only check for positive amount
       if (!total || isNaN(total) || total <= 0) {
-        console.log('❌ Invalid total amount calculated:', total);
+        // console.log('❌ Invalid total amount calculated:', total);
         toast({
           title: 'Calculation Error',
           description: 'Unable to calculate order total. Please refresh and try again.',
@@ -219,7 +284,7 @@ const Checkout: React.FC = () => {
       
       // Check if cart is empty
       if (cart.length === 0) {
-        console.log('❌ Cart is empty during payment');
+        // console.log('❌ Cart is empty during payment');
         toast({
           title: 'Cart Empty',
           description: 'Your cart is empty. Please add items before proceeding.',
@@ -229,15 +294,15 @@ const Checkout: React.FC = () => {
         return;
       }
       
-      console.log(`✅ Proceeding with payment for ₹${total}`);
+      // console.log(`✅ Proceeding with payment for ₹${total}`);
       
       // Create order with LG-Pay
       const orderResponse = await lgPayAPI.createOrder(total);
       
-      console.log('📥 Frontend: Order response received:', orderResponse);
+      // console.log('📥 Frontend: Order response received:', orderResponse);
 
       if (!orderResponse.success) {
-        console.error('❌ Order creation failed:', orderResponse);
+        // console.error('❌ Order creation failed:', orderResponse);
         
         // Enhanced error handling
         let errorTitle = 'Order Creation Failed';
@@ -247,6 +312,12 @@ const Checkout: React.FC = () => {
         if (orderResponse.debug?.errorType === 'INVALID_AMOUNT') {
           errorTitle = 'Invalid Order Amount';
           errorMessage = 'Please check your order total and try again.';
+        } else if (orderResponse.debug?.errorType === 'LGPAY_CHANNEL_RESTRICTION') {
+          errorTitle = 'Payment Method Limitation';
+          errorMessage = `UPI payments are not available for ₹${orderResponse.debug?.amountSentInRupees}. Please try adding more items or contact support for alternative payment methods.`;
+        } else if (orderResponse.debug?.errorType === 'LGPAY_GATEWAY_MINIMUM') {
+          errorTitle = 'Payment Gateway Limitation';
+          errorMessage = `The payment gateway requires a minimum amount. ${orderResponse.message}`;
         } else if (orderResponse.debug?.errorType === 'SIGNATURE_ERROR') {
           errorTitle = 'Payment Gateway Error';
           errorMessage = 'Payment gateway configuration issue. Please try again or contact support.';
@@ -289,10 +360,10 @@ const Checkout: React.FC = () => {
                         orderResponse.response?.paylink ||
                         orderResponse.response?.link;
       
-      console.log('🔗 Detected payment URL:', paymentUrl);
+      // console.log('🔗 Detected payment URL:', paymentUrl);
       
       if (paymentUrl) {
-        console.log('➡️  Redirecting to LG-Pay payment gateway...');
+        // console.log('➡️  Redirecting to LG-Pay payment gateway...');
         
         toast({
           title: 'Redirecting to Payment',
@@ -301,13 +372,13 @@ const Checkout: React.FC = () => {
         
         // Show a brief loading state, then redirect
         setTimeout(() => {
-          console.log('🌐 Redirecting to:', paymentUrl);
+          // console.log('🌐 Redirecting to:', paymentUrl);
           window.location.href = paymentUrl;
         }, 2000);
         
       } else {
-        console.log('⚠️  No payment URL found in response');
-        console.log('📋 Full response for analysis:', orderResponse);
+        // console.log('⚠️  No payment URL found in response');
+        // console.log('📋 Full response for analysis:', orderResponse);
         
         // Show error with debug info
         toast({
@@ -320,7 +391,7 @@ const Checkout: React.FC = () => {
       }
 
     } catch (error) {
-      console.error('❌ Payment error:', error);
+      // console.error('❌ Payment error:', error);
       
       // Enhanced network error handling
       let errorMessage = 'Network error occurred. Please check your connection and try again.';
@@ -501,6 +572,8 @@ const Checkout: React.FC = () => {
     );
   }
 
+  const steps = getSteps();
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header - Clean & Fixed */}
@@ -508,7 +581,7 @@ const Checkout: React.FC = () => {
         <div className="w-full max-w-md mx-auto px-4 py-3">
           <div className="flex items-center">
             <button 
-              onClick={() => navigate(-1)} 
+              onClick={handleBackNavigation} 
               className="mr-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
             >
               <ArrowLeft className="text-gray-600 h-5 w-5" />
@@ -522,36 +595,74 @@ const Checkout: React.FC = () => {
         </div>
       </header>
 
-      {/* Enhanced Stepper with Better Layout */}
+      {/* Working Stepper Navigation */}
       <div className="bg-white border-b border-gray-100">
         <div className="w-full max-w-md mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center min-w-0">
-                <div className="flex flex-col items-center">
-                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mb-1 ${
-                    step.completed 
-                      ? 'bg-purple-600 text-white' 
-                      : currentStep === step.id
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-300 text-gray-500'
-                  }`}>
-                    {step.completed ? '✓' : step.id}
+            {steps.map((step, index) => {
+              const isClickable = step.id < currentStep; // Can click on previous steps
+              const isActive = currentStep === step.id;
+              const isPrevious = step.id < currentStep;
+              
+              return (
+                <div key={step.id} className="flex items-center min-w-0">
+                  <div className="flex flex-col items-center">
+                    {/* Clickable Step Circle */}
+                    <button
+                      onClick={() => {
+                        if (isClickable) {
+                          navigateToStep(step.id);
+                        }
+                      }}
+                      disabled={!isClickable}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1 transition-all duration-200 ${
+                        isPrevious
+                          ? 'bg-green-600 text-white cursor-pointer hover:bg-green-700 hover:scale-110 shadow-lg'
+                          : isActive
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {isPrevious ? '✓' : step.id}
+                    </button>
+                    
+                    {/* Step Name */}
+                    <span className={`text-xs font-medium text-center ${
+                      isPrevious || isActive ? 'text-purple-600' : 'text-gray-500'
+                    }`}>
+                      {step.name}
+                    </span>
+                    
+                    {/* Edit Link for Previous Steps */}
+                    {isPrevious && (
+                      <button
+                        onClick={() => navigateToStep(step.id)}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 cursor-pointer font-medium hover:underline"
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
-                  <span className={`text-xs font-medium text-center ${
-                    step.completed || currentStep === step.id ? 'text-purple-600' : 'text-gray-500'
-                  }`}>
-                    {step.name}
-                  </span>
+                  
+                  {/* Progress Line */}
+                  {index < steps.length - 1 && (
+                    <div className={`h-px flex-1 mx-2 mt-3 ${
+                      isPrevious ? 'bg-green-300' : 'bg-gray-300'
+                    }`}></div>
+                  )}
                 </div>
-                {index < steps.length - 1 && (
-                  <div className={`h-px flex-1 mx-3 mt-3 ${
-                    step.completed ? 'bg-purple-300' : 'bg-gray-300'
-                  }`}></div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
+          
+          {/* Clear Navigation Instructions */}
+          {currentStep > 1 && (
+            <div className="mt-3 text-center">
+              <p className="text-xs text-green-600 font-medium">
+                ✓ Click on completed steps to edit
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -606,11 +717,53 @@ const Checkout: React.FC = () => {
               </div>
             ))}
 
+            {/* Minimum Order Suggestions */}
+            {(() => {
+              const { showSuggestions, shortfall, suggestedProducts } = getMinimumOrderSuggestions();
+              
+              // if (showSuggestions) {
+              //   return (
+              //     <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 mt-4">
+              //       <h4 className="font-medium text-orange-800 mb-2">
+              //         Add ₹{shortfall} more to place your order
+              //       </h4>
+              //       <p className="text-sm text-orange-600 mb-3">
+              //         Minimum order value is ₹101. Choose from these add-ons:
+              //       </p>
+              //       <div className="space-y-2">
+              //         {suggestedProducts.map(product => (
+              //           <div key={product.id} className="flex items-center justify-between bg-white p-2 rounded border">
+              //             <span className="text-sm font-medium">{product.name}</span>
+              //             <div className="flex items-center space-x-2">
+              //               <span className="text-sm font-bold text-orange-600">₹{product.price}</span>
+              //               <Button 
+              //                 size="sm" 
+              //                 variant="outline"
+              //                 className="text-xs px-2 py-1"
+              //                 onClick={() => {
+              //                   toast({
+              //                     title: 'Feature Coming Soon',
+              //                     description: 'Add-on products will be available soon!',
+              //                   });
+              //                 }}
+              //               >
+              //                 Add
+              //               </Button>
+              //             </div>
+              //           </div>
+              //         ))}
+              //       </div>
+              //     </div>
+              //   );
+              // }
+              return null;
+            })()}
+
             {/* Cart Summary */}
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mt-4">
               <h3 className="font-semibold text-gray-800 mb-3">Order Summary</h3>
               {(() => {
-                const { subtotal, discount, total } = getDiscountInfo();
+                const { subtotal, discount, convenienceFee, total, isMinimumOrder } = getOrderTotal();
                 
                 return (
                   <div className="space-y-2 text-sm">
@@ -619,7 +772,7 @@ const Checkout: React.FC = () => {
                       {discount > 0 ? (
                         <span className="font-semibold">
                           <span className="line-through text-gray-400 mr-2">₹{subtotal}</span>
-                          <span className="text-green-600">₹{total}</span>
+                          <span className="text-green-600">₹{subtotal - discount}</span>
                         </span>
                       ) : (
                         <span className="font-semibold text-gray-800">₹{subtotal}</span>
@@ -631,6 +784,12 @@ const Checkout: React.FC = () => {
                         <span>-₹{discount}</span>
                       </div>
                     )}
+                    {convenienceFee > 0 && (
+                      <div className="flex justify-between text-orange-600">
+                        <span>Convenience Fee (Min. order ₹101)</span>
+                        <span>+₹{convenienceFee}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-gray-600">Shipping:</span>
                       <span className="text-green-600 font-medium">FREE</span>
@@ -640,6 +799,11 @@ const Checkout: React.FC = () => {
                       <span className="text-gray-800">To Pay:</span>
                       <span className="text-purple-600">₹{total}</span>
                     </div>
+                    {isMinimumOrder && (
+                      <div className="text-xs text-orange-600 mt-2 bg-orange-50 p-2 rounded">
+                        * Convenience fee applied due to minimum order value of ₹101
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -650,6 +814,17 @@ const Checkout: React.FC = () => {
         {/* Step 2: Address */}
         {currentStep === 2 && (
           <div className="p-4">
+            {/* Back to Cart Button - Prominent */}
+            <div className="mb-4">
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors bg-purple-50 hover:bg-purple-100 px-3 py-2 rounded-lg"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Cart
+              </button>
+            </div>
+
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <h3 className="text-lg font-semibold mb-4 flex items-center text-gray-800">
                 <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
@@ -797,11 +972,22 @@ const Checkout: React.FC = () => {
         {/* Step 3: Payment */}
         {currentStep === 3 && (
           <div className="p-4 space-y-4">
+            {/* Back to Address Button - Prominent */}
+            <div className="mb-4">
+              <button
+                onClick={() => setCurrentStep(2)}
+                className="flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors bg-purple-50 hover:bg-purple-100 px-3 py-2 rounded-lg"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Address
+              </button>
+            </div>
+
             {/* Price Summary */}
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
               <h3 className="font-semibold mb-3 text-gray-800">Order Summary</h3>
               {(() => {
-                const { subtotal, discount, total } = getDiscountInfo();
+                const { subtotal, discount, convenienceFee, total, isMinimumOrder } = getOrderTotal();
                 
                 return (
                   <div className="space-y-2 text-sm">
@@ -815,6 +1001,12 @@ const Checkout: React.FC = () => {
                         <span>-₹{discount}</span>
                       </div>
                     )}
+                    {convenienceFee > 0 && (
+                      <div className="flex justify-between text-orange-600">
+                        <span>Convenience Fee (Min. order ₹101):</span>
+                        <span>+₹{convenienceFee}</span>
+                      </div>
+                    )}
                     <div className="flex justify-between">
                       <span className="text-gray-600">Delivery:</span>
                       <span className="text-green-600 font-medium">FREE</span>
@@ -824,6 +1016,11 @@ const Checkout: React.FC = () => {
                       <span className="text-gray-800">Total Amount:</span>
                       <span className="text-purple-600">₹{total}</span>
                     </div>
+                    {isMinimumOrder && (
+                      <div className="text-xs text-orange-600 mt-2 bg-orange-50 p-2 rounded">
+                        * Convenience fee applied to meet minimum order value of ₹101
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -992,17 +1189,24 @@ const Checkout: React.FC = () => {
               <div className="flex justify-between items-center">
                 <div>
                   {(() => { 
-                    const { subtotal, discount, total } = getDiscountInfo(); 
+                    const { subtotal, discount, convenienceFee, total, isMinimumOrder } = getOrderTotal(); 
                     
                     return (
-                      <div className="font-bold text-lg">
-                        {discount > 0 ? (
-                          <>
-                            <span className="line-through text-gray-400 mr-2 text-sm">₹{subtotal}</span>
-                            <span className="text-green-600">₹{total}</span>
-                          </>
-                        ) : (
-                          <span className="text-gray-800">₹{subtotal}</span>
+                      <div>
+                        <div className="font-bold text-lg">
+                          {discount > 0 ? (
+                            <>
+                              <span className="line-through text-gray-400 mr-2 text-sm">₹{subtotal}</span>
+                              <span className="text-green-600">₹{total}</span>
+                            </>
+                          ) : (
+                            <span className="text-gray-800">₹{total}</span>
+                          )}
+                        </div>
+                        {isMinimumOrder && (
+                          <div className="text-xs text-orange-600">
+                            (Incl. ₹{convenienceFee} convenience fee)
+                          </div>
                         )}
                       </div>
                     ); 
@@ -1044,17 +1248,24 @@ const Checkout: React.FC = () => {
               <div className="flex justify-between items-center">
                 <div>
                   {(() => { 
-                    const { subtotal, discount, total } = getDiscountInfo(); 
+                    const { subtotal, discount, convenienceFee, total, isMinimumOrder } = getOrderTotal(); 
                     
                     return (
-                      <div className="font-bold text-lg">
-                        {discount > 0 ? (
-                          <>
-                            <span className="line-through text-gray-400 mr-2 text-sm">₹{subtotal}</span>
-                            <span className="text-green-600">₹{total}</span>
-                          </>
-                        ) : (
-                          <span className="text-gray-800">₹{subtotal}</span>
+                      <div>
+                        <div className="font-bold text-lg">
+                          {discount > 0 ? (
+                            <>
+                              <span className="line-through text-gray-400 mr-2 text-sm">₹{subtotal}</span>
+                              <span className="text-green-600">₹{total}</span>
+                            </>
+                          ) : (
+                            <span className="text-gray-800">₹{total}</span>
+                          )}
+                        </div>
+                        {isMinimumOrder && (
+                          <div className="text-xs text-orange-600">
+                            (Incl. ₹{convenienceFee} convenience fee)
+                          </div>
                         )}
                       </div>
                     ); 

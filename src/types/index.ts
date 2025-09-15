@@ -52,11 +52,41 @@ export interface Category {
 // Page type enum
 export type PageType = 'home' | 'category' | 'productDetail' | 'checkout' | 'categories' | 'orders' | 'help' | 'account';
 
-// Checkout step interface
+// Checkout step interface - Enhanced with navigation properties
 export interface CheckoutStep {
   id: number;
   name: string;
   completed: boolean;
+  isClickable?: boolean; // Whether the step can be navigated to
+  isActive?: boolean;    // Whether this is the current step
+}
+
+// Navigation direction types
+export type NavigationDirection = 'forward' | 'backward' | 'direct';
+
+// Step navigation handler type
+export type StepNavigationHandler = (stepNumber: number, direction?: NavigationDirection) => void;
+
+// Back navigation handler type  
+export type BackNavigationHandler = () => void;
+
+// Step validation result
+export interface StepValidationResult {
+  isValid: boolean;
+  errors?: string[];
+  canProceed: boolean;
+}
+
+// Step validation function type
+export type StepValidator = () => StepValidationResult;
+
+// Checkout navigation state
+export interface CheckoutNavigationState {
+  currentStep: number;
+  completedSteps: number[];
+  canGoBack: boolean;
+  canGoForward: boolean;
+  nextStepAllowed: boolean;
 }
 
 // Address interface
@@ -129,6 +159,18 @@ export interface UseToastReturn {
   }) => void;
 }
 
+// Enhanced checkout hook return type
+export interface UseCheckoutReturn {
+  currentStep: number;
+  steps: CheckoutStep[];
+  navigationState: CheckoutNavigationState;
+  navigateToStep: StepNavigationHandler;
+  goBack: BackNavigationHandler;
+  goForward: () => void;
+  validateCurrentStep: StepValidator;
+  canProceedToNext: boolean;
+}
+
 // Location data types
 export interface LocationData {
   indianStates: string[];
@@ -174,6 +216,49 @@ export interface LGPayOrderResponse extends APIBaseResponse {
   };
 }
 
+// Enhanced LG-Pay response with error handling
+export interface LGPayResponse {
+  success: boolean;
+  message?: string;
+  order_sn?: string;
+  response?: {
+    pay_url?: string;
+    payment_url?: string;
+    payUrl?: string;
+    url?: string;
+    redirect_url?: string;
+    qr_url?: string;
+    paylink?: string;
+    link?: string;
+    status?: string;
+    [key: string]: any;
+  };
+  debug?: {
+    amountSentInPaisa?: number;
+    amountSentInRupees?: number;
+    originalResponse?: any;
+    responseType?: string;
+    possibleIssue?: string;
+    errorType?: LGPayErrorType;
+    sentAmount?: string;
+    minimumAmount?: number;
+    currentAmount?: number;
+  };
+  minimumAmount?: number;
+  currentAmount?: number;
+}
+
+// LG-Pay error types for better error handling
+export type LGPayErrorType = 
+  | 'INVALID_AMOUNT'
+  | 'LGPAY_CHANNEL_RESTRICTION' 
+  | 'LGPAY_GATEWAY_MINIMUM'
+  | 'SIGNATURE_ERROR'
+  | 'LGPAY_ERROR'
+  | 'NETWORK_ERROR'
+  | 'NO_PAYMENT_URL'
+  | 'FRONTEND_API_BLOCKED';
+
 // Webhook response from LG-Pay
 export interface LGPayWebhookData {
   order_sn: string;
@@ -212,11 +297,94 @@ export interface PaymentReturnParams {
   [key: string]: string; // Allow for additional return parameters
 }
 
+// Address validation errors type
+export type AddressErrors = Partial<Record<keyof Address, string>>;
+
+// Form validation result
+export interface FormValidationResult {
+  isValid: boolean;
+  errors: Record<string, string>;
+  firstErrorField?: string;
+}
+
+// Checkout form validation function type
+export type CheckoutFormValidator<T> = (data: T) => FormValidationResult;
+
+// Step completion tracker
+export interface StepCompletionState {
+  cart: boolean;
+  address: boolean;
+  payment: boolean;
+  summary: boolean;
+}
+
+// Checkout process state
+export interface CheckoutProcessState {
+  currentStep: number;
+  isProcessing: boolean;
+  completedSteps: StepCompletionState;
+  navigationHistory: number[];
+  canNavigateBack: boolean;
+  lastError?: string;
+}
+
+// Discount calculation info
+export interface DiscountInfo {
+  subtotal: number;
+  discount: number;
+  total: number;
+  discountPercentage?: number;
+  discountType?: 'percentage' | 'fixed' | 'offer';
+}
+
 // Global window extensions for LG-Pay integration
 declare global {
   interface Window {
     upiValidationTimeout?: NodeJS.Timeout;
   }
+}
+
+// Component prop types for checkout steps
+export interface CheckoutStepProps {
+  currentStep: number;
+  onStepChange: StepNavigationHandler;
+  onBack: BackNavigationHandler;
+  isProcessing?: boolean;
+}
+
+export interface CartStepProps extends CheckoutStepProps {
+  cart: CartItem[];
+  onUpdateQuantity: (id: number | string, size: string, delta: number) => void;
+  onRemoveItem: (id: number | string, size: string) => void;
+  discountInfo: DiscountInfo;
+}
+
+export interface AddressStepProps extends CheckoutStepProps {
+  address: Address;
+  onAddressChange: (address: Address) => void;
+  onSubmit: (address: Address) => void;
+  errors: AddressErrors;
+}
+
+export interface PaymentStepProps extends CheckoutStepProps {
+  total: number;
+  address: Address;
+  onPayment: () => Promise<void>;
+  isProcessingPayment: boolean;
+}
+
+export interface SummaryStepProps extends CheckoutStepProps {
+  order: EnhancedOrder;
+  onDownloadInvoice: () => void;
+}
+
+// Navigation configuration
+export interface CheckoutNavigationConfig {
+  allowBackNavigation: boolean;
+  allowStepSkipping: boolean;
+  showProgressIndicator: boolean;
+  autoAdvanceOnCompletion: boolean;
+  validateBeforeNavigation: boolean;
 }
 
 // Legacy types (kept for backward compatibility but deprecated)
