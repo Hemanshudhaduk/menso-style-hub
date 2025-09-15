@@ -39,19 +39,43 @@ interface LGPayResponse {
     originalResponse?: any;
     responseType?: string;
     possibleIssue?: string;
+    errorType?: string;
   };
 }
 
-// API service for LG-Pay
+// API service for LG-Pay - Simplified without minimum validation
 const lgPayAPI = {
   createOrder: async (amount: number): Promise<LGPayResponse> => {
     console.log('🔵 Frontend: Creating order with amount (rupees):', amount);
+    
+    // Basic validation - only check for valid number
+    if (!amount || isNaN(amount) || amount <= 0) {
+      console.log('❌ Invalid amount:', amount);
+      
+      return {
+        success: false,
+        message: `Invalid amount: ₹${amount}`,
+        debug: {
+          errorType: 'INVALID_AMOUNT',
+          possibleIssue: 'Amount must be a positive number'
+        }
+      };
+    }
+    
+    console.log('✅ Amount validation passed, proceeding with API call');
     
     try {
       const response = await fetch(`${API_BASE_URL}/api/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount })
+        body: JSON.stringify({ 
+          amount,
+          debug: {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            frontendValidation: 'PASSED'
+          }
+        })
       });
       
       const data = await response.json();
@@ -109,11 +133,12 @@ const Checkout: React.FC = () => {
   const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
   const { placeOrder } = useOrders();
 
+  // Simplified discount calculation
   const getDiscountInfo = (): { subtotal: number; discount: number; total: number } => {
     const quantity = cart.reduce((s, i) => s + i.quantity, 0);
     const subtotal = getTotalPrice();
     const discount = computeGaneshOfferDiscount(subtotal, quantity);
-    const total = subtotal - discount;
+    const total = Math.max(0, subtotal - discount); // Ensure non-negative
     return { subtotal, discount, total };
   };
 
@@ -177,9 +202,34 @@ const Checkout: React.FC = () => {
     setIsProcessingPayment(true);
 
     try {
-      // Calculate total amount in rupees (backend will convert to paisa)
+      // Calculate total amount in rupees
       const { total } = getDiscountInfo();
       console.log('💰 Frontend: Payment amount (rupees):', total);
+      
+      // Basic validation - only check for positive amount
+      if (!total || isNaN(total) || total <= 0) {
+        console.log('❌ Invalid total amount calculated:', total);
+        toast({
+          title: 'Calculation Error',
+          description: 'Unable to calculate order total. Please refresh and try again.',
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      // Check if cart is empty
+      if (cart.length === 0) {
+        console.log('❌ Cart is empty during payment');
+        toast({
+          title: 'Cart Empty',
+          description: 'Your cart is empty. Please add items before proceeding.',
+          variant: 'destructive'
+        });
+        navigate('/');
+        return;
+      }
+      
+      console.log(`✅ Proceeding with payment for ₹${total}`);
       
       // Create order with LG-Pay
       const orderResponse = await lgPayAPI.createOrder(total);
@@ -189,15 +239,24 @@ const Checkout: React.FC = () => {
       if (!orderResponse.success) {
         console.error('❌ Order creation failed:', orderResponse);
         
-        // Show detailed error message
+        // Enhanced error handling
+        let errorTitle = 'Order Creation Failed';
         let errorMessage = orderResponse.message || 'Unable to create order.';
         
-        if (orderResponse.debug?.possibleIssue) {
-          errorMessage += ` Possible issue: ${orderResponse.debug.possibleIssue}`;
+        // Handle specific error types
+        if (orderResponse.debug?.errorType === 'INVALID_AMOUNT') {
+          errorTitle = 'Invalid Order Amount';
+          errorMessage = 'Please check your order total and try again.';
+        } else if (orderResponse.debug?.errorType === 'SIGNATURE_ERROR') {
+          errorTitle = 'Payment Gateway Error';
+          errorMessage = 'Payment gateway configuration issue. Please try again or contact support.';
+        } else if (orderResponse.debug?.errorType === 'LGPAY_ERROR') {
+          errorTitle = 'Payment Gateway Error';
+          errorMessage = `Payment gateway responded with: ${orderResponse.message}`;
         }
         
         toast({ 
-          title: 'Order Creation Failed', 
+          title: errorTitle, 
           description: errorMessage,
           variant: 'destructive'
         });
@@ -263,9 +322,20 @@ const Checkout: React.FC = () => {
     } catch (error) {
       console.error('❌ Payment error:', error);
       
+      // Enhanced network error handling
+      let errorMessage = 'Network error occurred. Please check your connection and try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage = 'Unable to connect to payment service. Please check your internet connection.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Payment service is taking too long to respond. Please try again.';
+        }
+      }
+      
       toast({
         title: 'Payment Error',
-        description: 'Network error occurred. Please check your connection and try again.',
+        description: errorMessage,
         variant: 'destructive'
       });
       
@@ -452,14 +522,14 @@ const Checkout: React.FC = () => {
         </div>
       </header>
 
-      {/* Stepper - Left Aligned with Small Circles */}
+      {/* Enhanced Stepper with Better Layout */}
       <div className="bg-white border-b border-gray-100">
-        <div className="w-full max-w-md mx-auto px-4 py-3">
-          <div className="flex items-center w-full">
+        <div className="w-full max-w-md mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
             {steps.map((step, index) => (
-              <div key={step.id} className="flex items-center" style={{ flex: index === 3 ? '1.2' : '1' }}>
-                <div className="flex items-center">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0 ${
+              <div key={step.id} className="flex items-center min-w-0">
+                <div className="flex flex-col items-center">
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mb-1 ${
                     step.completed 
                       ? 'bg-purple-600 text-white' 
                       : currentStep === step.id
@@ -468,14 +538,14 @@ const Checkout: React.FC = () => {
                   }`}>
                     {step.completed ? '✓' : step.id}
                   </div>
-                  <span className={`ml-1 text-[9px] font-normal ${
+                  <span className={`text-xs font-medium text-center ${
                     step.completed || currentStep === step.id ? 'text-purple-600' : 'text-gray-500'
-                  } whitespace-nowrap`}>
+                  }`}>
                     {step.name}
                   </span>
                 </div>
                 {index < steps.length - 1 && (
-                  <div className={`h-px flex-1 mx-2 ${
+                  <div className={`h-px flex-1 mx-3 mt-3 ${
                     step.completed ? 'bg-purple-300' : 'bg-gray-300'
                   }`}></div>
                 )}
@@ -485,8 +555,8 @@ const Checkout: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content - Properly Constrained */}
-      <main className="w-full max-w-md mx-auto pb-28 min-h-screen">
+      {/* Main Content - Enhanced Layout */}
+      <main className="w-full max-w-md mx-auto pb-32 min-h-screen">
         {/* Step 1: Cart */}
         {currentStep === 1 && (
           <div className="p-4 space-y-3">
@@ -536,24 +606,23 @@ const Checkout: React.FC = () => {
               </div>
             ))}
 
-            {/* Cart Summary - Improved Layout */}
+            {/* Cart Summary */}
             <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mt-4">
               <h3 className="font-semibold text-gray-800 mb-3">Order Summary</h3>
               {(() => {
-                const quantity = cart.reduce((s, i) => s + i.quantity, 0);
-                const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
-                const finalTotal = getTotalPrice() - discount;
+                const { subtotal, discount, total } = getDiscountInfo();
+                
                 return (
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-gray-600">Cart Total:</span>
                       {discount > 0 ? (
                         <span className="font-semibold">
-                          <span className="line-through text-gray-400 mr-2">₹{getTotalPrice()}</span>
-                          <span className="text-green-600">₹{finalTotal}</span>
+                          <span className="line-through text-gray-400 mr-2">₹{subtotal}</span>
+                          <span className="text-green-600">₹{total}</span>
                         </span>
                       ) : (
-                        <span className="font-semibold text-gray-800">₹{getTotalPrice()}</span>
+                        <span className="font-semibold text-gray-800">₹{subtotal}</span>
                       )}
                     </div>
                     {discount > 0 && (
@@ -569,7 +638,7 @@ const Checkout: React.FC = () => {
                     <hr className="border-gray-200 my-2" />
                     <div className="flex justify-between font-bold text-lg">
                       <span className="text-gray-800">To Pay:</span>
-                      <span className="text-purple-600">₹{finalTotal}</span>
+                      <span className="text-purple-600">₹{total}</span>
                     </div>
                   </div>
                 );
@@ -733,6 +802,7 @@ const Checkout: React.FC = () => {
               <h3 className="font-semibold mb-3 text-gray-800">Order Summary</h3>
               {(() => {
                 const { subtotal, discount, total } = getDiscountInfo();
+                
                 return (
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
@@ -827,84 +897,94 @@ const Checkout: React.FC = () => {
         {/* Step 4: Order Summary */}
         {currentStep === 4 && lastOrder && (
           <div className="p-4">
-            <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-green-600 text-3xl">✓</span>
-              </div>
-              <h2 className="text-2xl font-bold text-green-600 mb-2">Order Placed!</h2>
-              <p className="text-gray-600 mb-6">Your order has been successfully placed</p>
-
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3 text-left mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Order ID:</span>
-                  <span className="font-medium">{lastOrder.id}</span>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Success Header */}
+              <div className="bg-green-50 p-6 text-center border-b border-green-100">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-green-600 text-2xl">✓</span>
                 </div>
-                {lastOrder.orderSN && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Order SN:</span>
-                    <span className="font-medium">{lastOrder.orderSN}</span>
+                <h2 className="text-xl font-bold text-green-600 mb-1">Order Placed!</h2>
+                <p className="text-gray-600 text-sm">Your order has been successfully placed</p>
+              </div>
+
+              {/* Order Details - Properly Contained */}
+              <div className="p-4">
+                <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order ID:</span>
+                    <span className="font-medium">{lastOrder.id}</span>
                   </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Payment Method:</span>
-                  <span className="font-medium capitalize">LG-Pay Online</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Order Date:</span>
-                  <span className="font-medium">{new Date(lastOrder.createdAt).toLocaleDateString()}</span>
-                </div>
-                <hr className="border-gray-200" />
-                <div className="flex justify-between font-semibold">
-                  <span>Total Paid:</span>
-                  <span className="text-green-600">₹{lastOrder.total}</span>
-                </div>
-              </div>
-
-              {/* Order Items */}
-              <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left">
-                <h4 className="font-medium mb-3">Items Ordered</h4>
-                <div className="space-y-2">
-                  {lastOrder.items.map((item: OrderItem) => (
-                    <div key={`${item.id}-${item.size}`} className="flex justify-between items-center text-sm">
-                      <div className="flex-1">
-                        <div className="font-medium">{item.name}</div>
-                        <div className="text-gray-600">Size: {item.size} × {item.quantity}</div>
-                      </div>
-                      <div className="font-medium">₹{item.price * item.quantity}</div>
+                  {lastOrder.orderSN && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Order SN:</span>
+                      <span className="font-medium">{lastOrder.orderSN}</span>
                     </div>
-                  ))}
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Payment Method:</span>
+                    <span className="font-medium">LG-Pay Online</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order Date:</span>
+                    <span className="font-medium">{new Date(lastOrder.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2 mt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span>Total Paid:</span>
+                      <span className="text-green-600">₹{lastOrder.total}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="space-y-3">
-                <Button 
-                  variant="outline" 
-                  onClick={handleDownloadInvoice}
-                  className="w-full"
-                >
-                  Download Invoice
-                </Button>
-                <Button 
-                  onClick={() => navigate('/orders')} 
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  Track Order
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/')} 
-                  className="w-full"
-                >
-                  Continue Shopping
-                </Button>
+                {/* Order Items - Improved Layout */}
+                <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                  <h4 className="font-medium mb-3 text-sm">Items Ordered</h4>
+                  <div className="space-y-2">
+                    {lastOrder.items.map((item: OrderItem) => (
+                      <div key={`${item.id}-${item.size}`} className="flex justify-between items-start text-sm">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <div className="font-medium truncate">{item.name}</div>
+                          <div className="text-gray-600 text-xs">Size: {item.size} × {item.quantity}</div>
+                        </div>
+                        <div className="font-medium text-sm">₹{item.price * item.quantity}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons - Properly Spaced */}
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDownloadInvoice}
+                    className="w-full text-sm"
+                    size="sm"
+                  >
+                    Download Invoice
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/orders')} 
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-sm"
+                    size="sm"
+                  >
+                    Track Order
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/')} 
+                    className="w-full text-sm"
+                    size="sm"
+                  >
+                    Continue Shopping
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         )}
       </main>
 
-      {/* Fixed Bottom Action Bar - Mobile Optimized */}
+      {/* Fixed Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
         <div className="w-full max-w-md mx-auto p-4">
           {currentStep === 1 && (
@@ -913,6 +993,7 @@ const Checkout: React.FC = () => {
                 <div>
                   {(() => { 
                     const { subtotal, discount, total } = getDiscountInfo(); 
+                    
                     return (
                       <div className="font-bold text-lg">
                         {discount > 0 ? (
@@ -929,6 +1010,7 @@ const Checkout: React.FC = () => {
                   <div className="text-xs text-blue-600 font-medium">VIEW PRICE DETAILS</div>
                 </div>
               </div>
+              
               <Button 
                 size="lg" 
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl"
@@ -963,6 +1045,7 @@ const Checkout: React.FC = () => {
                 <div>
                   {(() => { 
                     const { subtotal, discount, total } = getDiscountInfo(); 
+                    
                     return (
                       <div className="font-bold text-lg">
                         {discount > 0 ? (
