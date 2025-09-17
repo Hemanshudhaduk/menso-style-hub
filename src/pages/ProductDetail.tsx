@@ -132,17 +132,17 @@ const ProductDetail = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
+    <div className="min-h-screen bg-background max-w-md mx-auto relative">
+      {/* Header - Mobile View Only */}
       <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="px-2 sm:px-4 py-3">
+        <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <button onClick={() => navigate(-1)} className="mr-2 sm:mr-3">
+              <button onClick={() => navigate(-1)} className="mr-3">
                 <ArrowLeft className="text-gray-600 h-6 w-6" />
               </button>
               <h1
-                className="text-xl sm:text-3xl font-extrabold lowercase tracking-tight cursor-pointer"
+                className="text-xl font-extrabold lowercase tracking-tight cursor-pointer"
                 style={{ color: "#6D106A" }}
                 onClick={() => navigate("/")}
               >
@@ -166,9 +166,9 @@ const ProductDetail = () => {
                   onClick={handleShareClick}
                 />
                 {isShareMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-40 bg-white border rounded shadow-lg z-50">
+                  <div className="absolute right-0 mt-2 w-40 bg-white border rounded-lg shadow-lg z-50">
                     <button
-                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-t-lg"
                       onClick={() => {
                         window.open(
                           `https://wa.me/?text=${encodeURIComponent(
@@ -210,7 +210,7 @@ const ProductDetail = () => {
                       Share on Twitter
                     </button>
                     <button
-                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                      className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 rounded-b-lg"
                       onClick={handleCopyLink}
                     >
                       Copy Link
@@ -235,152 +235,144 @@ const ProductDetail = () => {
       </header>
 
       <main className="pb-24">
-        {/* Product Images - main and thumbnails */}
+        {/* Product Images - Mobile Optimized */}
         <div className="bg-white">
-          {/* Mobile-first single column layout inside mobile frame */}
-          <div className="flex flex-col gap-4">
-            <div className="w-full flex flex-col justify-between">
-              <div
-                className="aspect-[3/4] w-full rounded overflow-hidden bg-gray-50 relative"
-                onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
-                onTouchEnd={(e) => {
-                  if (touchStartX == null) return;
-                  const endX = e.changedTouches[0]?.clientX ?? touchStartX;
-                  const delta = endX - touchStartX;
-                  if (Math.abs(delta) > 40) {
-                    if (delta > 0) handlePrevImage(); else handleNextImage();
-                  }
-                  setTouchStartX(null);
-                }}
-              >
-                <img
-                  src={galleryImages[selectedImageIndex]}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-                {galleryImages.length > 1 && (
-                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-black/20 px-2 py-1 rounded-full">
-                    {galleryImages.map((_, idx) => (
-                      <button
-                        key={idx}
-                        aria-label={`Go to image ${idx + 1}`}
-                        onClick={() => setSelectedImageIndex(idx)}
-                        className={`${idx === selectedImageIndex ? "w-2.5 h-2.5 bg-white" : "w-2 h-2 bg-white/60"} rounded-full`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div className="p-2 sm:p-4">
-                <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
-                  {galleryImages.length}{" "}
-                  {galleryImages.length === 1 ? "Image" : "Images"}
-                </p>
-                <div className="flex space-x-2 overflow-x-auto">
-                  {galleryImages.map((img, index) => (
-                    <div
-                      key={index}
-                      className={`flex-shrink-0 w-11 h-16 sm:w-16 sm:h-20 rounded border-2 cursor-pointer ${
-                        index === selectedImageIndex
-                          ? "border-fashion-purple"
-                          : "border-gray-200"
-                      }`}
-                      onClick={() => setSelectedImageIndex(index)}
-                    >
-                      <img
-                        src={img}
-                        alt={`${product.name} ${index + 1}`}
-                        className="w-full h-full object-cover rounded"
-                      />
-                    </div>
+          <div className="w-full">
+            {/* Main Product Image */}
+            <div
+              className="aspect-[3/4] w-full bg-gray-50 relative"
+              onTouchStart={(e) => setTouchStartX(e.touches[0]?.clientX ?? null)}
+              onTouchEnd={(e) => {
+                if (touchStartX == null) return;
+                const endX = e.changedTouches[0]?.clientX ?? touchStartX;
+                const delta = endX - touchStartX;
+                if (Math.abs(delta) > 40) {
+                  if (delta > 0) handlePrevImage(); else handleNextImage();
+                }
+                setTouchStartX(null);
+              }}
+            >
+              <img
+                src={galleryImages[selectedImageIndex]}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+              {galleryImages.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-black/30 px-3 py-1.5 rounded-full">
+                  {galleryImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      aria-label={`Go to image ${idx + 1}`}
+                      onClick={() => setSelectedImageIndex(idx)}
+                      className={`${
+                        idx === selectedImageIndex 
+                          ? "w-2.5 h-2.5 bg-white" 
+                          : "w-2 h-2 bg-white/60"
+                      } rounded-full transition-all duration-200`}
+                    />
                   ))}
                 </div>
-              </div>
+              )}
             </div>
-            {/* Product Info */}
-            <div className="w-full flex flex-col justify-between">
-              <div className="p-4 flex flex-col justify-center">
-                <h1 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
-                  {product.name}
-                </h1>
-                <div className="flex items-center space-x-3 mb-4">
-                  <span className="text-xl font-bold text-gray-900">
-                    ₹{product.price}.00
-                  </span>
-                  {product.price !== product.originalPrice && (
-                    <span className="text-lg text-gray-400 line-through">
-                      ₹{product.originalPrice}.00
-                    </span>
-                  )}
-                  <span className="text-lg text-green-600 font-medium">
-                    {product.discount}% off
-                  </span>
-                </div>
-                <div className="bg-green-50 p-3 rounded-lg mb-4">
-                  <p className="text-green-700 font-medium">
-                    ₹{product.price + 299} with 2 Special Offers
-                  </p>
-                </div>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="bg-green-600 text-white text-sm px-2 py-1 rounded flex items-center gap-1">
-                    {product.rating}
-                    <Star className="w-4 h-4 fill-current text-white" />
-                  </span>
-                  <span className="text-sm text-gray-500 ml-2 font-bold">
-                    ({product.reviews})
-                  </span>
-                  <span className="text-xs font-medium whitespace-nowrap inline-flex items-center gap-1">
-                    {/* Trusted SVG ... */}
-                    <svg width="55" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      {/* SVG paths ... */}
-                    </svg>
-                  </span>
-                </div>
-                <div className="mb-4 flex items-center gap-2 flex-wrap">
-                  <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded whitespace-nowrap inline-flex items-center">
-                    Free Delivery
-                  </span>
-                  <span className="bg-purple-100 text-fashion-purple text-xs px-2 py-1 rounded whitespace-nowrap inline-flex items-center gap-1">
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    7-Day Return Policy
-                  </span>
-                </div>
-                {/* Size Selection */}
-                <div className="mb-4">
-                  <h3 className="text-base font-semibold mb-3">Select Size</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {product.sizes.map((size) => (
-                      <button
-                        key={size}
-                        onClick={() => setSelectedSize(size)}
-                        className={`px-4 py-2 rounded-full border ${
-                          selectedSize === size
-                            ? "border-fashion-purple bg-fashion-purple/10 text-fashion-purple"
-                            : "border-gray-300 text-gray-600"
-                        }`}
-                      >
-                        {size}
-                      </button>
-                    ))}
+
+            {/* Image Thumbnails */}
+            <div className="p-4">
+              <p className="text-sm text-muted-foreground mb-3">
+                {galleryImages.length}{" "}
+                {galleryImages.length === 1 ? "Image" : "Images"}
+              </p>
+              <div className="flex space-x-2 overflow-x-auto pb-2">
+                {galleryImages.map((img, index) => (
+                  <div
+                    key={index}
+                    className={`flex-shrink-0 w-16 h-20 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                      index === selectedImageIndex
+                        ? "border-fashion-purple shadow-md"
+                        : "border-gray-200"
+                    }`}
+                    onClick={() => setSelectedImageIndex(index)}
+                  >
+                    <img
+                      src={img}
+                      alt={`${product.name} ${index + 1}`}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
                   </div>
-                </div>
-                {/* Inline actions (visible above the fixed bar too) */}
-                {/* <div className="flex space-x-3 mt-4">
-                  <Button variant="fashionOutline" size="lg" className="flex-1" onClick={handleAddToCart}>
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Add to Cart
-                  </Button>
-                  <Button variant="fashion" size="lg" className="flex-1" onClick={handleBuyNow}>
-                    Buy Now
-                  </Button>
-                </div> */}
+                ))}
               </div>
             </div>
           </div>
         </div>
 
+        {/* Product Info */}
+        <div className="bg-white p-4">
+          <h1 className="text-xl font-semibold text-gray-900 mb-3">
+            {product.name}
+          </h1>
+          
+          <div className="flex items-center space-x-3 mb-4">
+            <span className="text-2xl font-bold text-gray-900">
+              ₹{product.price}
+            </span>
+            {product.price !== product.originalPrice && (
+              <span className="text-lg text-gray-400 line-through">
+                ₹{product.originalPrice}
+              </span>
+            )}
+            <span className="text-lg text-green-600 font-medium">
+              {product.discount}% off
+            </span>
+          </div>
+
+          <div className="bg-green-50 p-3 rounded-lg mb-4">
+            <p className="text-green-700 font-medium">
+              ₹{product.price + 299} with 2 Special Offers
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 mb-4">
+            <span className="bg-green-600 text-white text-sm px-2 py-1 rounded flex items-center gap-1">
+              {product.rating}
+              <Star className="w-4 h-4 fill-current text-white" />
+            </span>
+            <span className="text-sm text-gray-500 font-bold">
+              ({product.reviews})
+            </span>
+          </div>
+
+          <div className="mb-4 flex items-center gap-2 flex-wrap">
+            <span className="bg-green-100 text-green-700 text-xs px-3 py-1.5 rounded-full font-medium">
+              Free Delivery
+            </span>
+            <span className="bg-purple-100 text-fashion-purple text-xs px-3 py-1.5 rounded-full font-medium inline-flex items-center gap-1">
+              <RotateCcw className="w-3.5 h-3.5" />
+              7-Day Return Policy
+            </span>
+          </div>
+
+          {/* Size Selection */}
+          <div className="mb-6">
+            <h3 className="text-base font-semibold mb-3">Select Size</h3>
+            <div className="flex flex-wrap gap-2">
+              {product.sizes.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className={`px-4 py-2 rounded-full border-2 font-medium transition-all duration-200 ${
+                    selectedSize === size
+                      ? "border-fashion-purple bg-fashion-purple/10 text-fashion-purple"
+                      : "border-gray-300 text-gray-600 hover:border-gray-400"
+                  }`}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Product Details */}
-        <div className="bg-white mt-2 p-4 max-w-4xl mx-auto rounded">
+        <div className="bg-white mt-2 p-4">
           <h3 className="text-lg font-semibold mb-4">Product Details</h3>
           <div className="space-y-2 text-sm">
             <p>
@@ -395,9 +387,9 @@ const ProductDetail = () => {
               {product.shipping}
             </p>
           </div>
+          
           {product.details?.kurta?.length > 0 && (
             <div className="mt-6">
-              {/* <h4 className="font-semibold mb-3">Kurta:</h4> */}
               <ul className="space-y-1 text-sm text-gray-600">
                 {product.details.kurta.map((text, idx) => (
                   <li key={idx}>• {text}</li>
@@ -405,9 +397,9 @@ const ProductDetail = () => {
               </ul>
             </div>
           )}
+          
           {product.details?.ProductDetails?.length > 0 && (
             <div className="mt-6">
-              {/* <h4 className="font-semibold mb-3">ProductDetails:</h4> */}
               <ul className="space-y-1 text-sm text-gray-600">
                 {product.details.ProductDetails.map((text, idx) => (
                   <li key={idx}>• {text}</li>
@@ -415,6 +407,7 @@ const ProductDetail = () => {
               </ul>
             </div>
           )}
+          
           {product.details?.pants?.length > 0 && (
             <div className="mt-4">
               <h4 className="font-semibold mb-3">Pants:</h4>
@@ -425,6 +418,7 @@ const ProductDetail = () => {
               </ul>
             </div>
           )}
+          
           {product.details?.dupatta?.length > 0 && (
             <div className="mt-4">
               <h4 className="font-semibold mb-3">Dupatta:</h4>
@@ -439,9 +433,9 @@ const ProductDetail = () => {
 
         {/* Recommended Products */}
         {recommendedProducts.length > 0 && (
-          <div className="bg-white mt-2 p-4 rounded">
+          <div className="bg-white mt-2 p-4">
             <h3 className="text-lg font-semibold mb-4">Products For You</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               {recommendedProducts.map((rp) => (
                 <ProductCard
                   key={rp.id}
@@ -465,26 +459,28 @@ const ProductDetail = () => {
         duration={2000}
       />
 
-      {/* Fixed Bottom Actions on Mobile */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-4 z-40 md:hidden">
-        <div className="flex space-x-3">
-          <Button
-            variant="fashionOutline"
-            size="lg"
-            className="flex-1"
-            onClick={handleAddToCart}
-          >
-            <ShoppingCart className="w-4 h-4 mr-2" />
-            Add to Cart
-          </Button>
-          <Button
-            variant="fashion"
-            size="lg"
-            className="flex-1"
-            onClick={handleBuyNow}
-          >
-            Buy Now
-          </Button>
+      {/* Fixed Bottom Actions - Shows on ALL screen sizes */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
+        <div className="max-w-md mx-auto p-4">
+          <div className="flex space-x-3">
+            <Button
+              variant="fashionOutline"
+              size="lg"
+              className="flex-1"
+              onClick={handleAddToCart}
+            >
+              <ShoppingCart className="w-4 h-4 mr-2" />
+              Add to Cart
+            </Button>
+            <Button
+              variant="fashion"
+              size="lg"
+              className="flex-1"
+              onClick={handleBuyNow}
+            >
+              Buy Now
+            </Button>
+          </div>
         </div>
       </div>
     </div>

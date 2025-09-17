@@ -13,103 +13,86 @@ import { computeGaneshOfferDiscount } from '@/lib/utils';
 import { useOrders } from '@/hooks/useOrders';
 import { useUser } from '@/hooks/useUser';
 
-// API configuration
+// API configuration for LG-Pay backend
 const API_BASE_URL: string = 'https://messho-backend.vercel.app';
-const RAZORPAY_KEY_ID: string = 'rzp_live_RAHSZS9k2sYCCf';
 
-// API response types
-interface APIResponse {
+// Enhanced LG-Pay API response types
+interface LGPayResponse {
   success: boolean;
-  message: string;
+  message?: string;
+  order_sn?: string;
+  response?: {
+    pay_url?: string;
+    payment_url?: string;
+    payUrl?: string;
+    url?: string;
+    redirect_url?: string;
+    qr_url?: string;
+    paylink?: string;
+    link?: string;
+    status?: string;
+    [key: string]: any;
+  };
+  debug?: {
+    amountSentInPaisa?: number;
+    amountSentInRupees?: number;
+    originalResponse?: any;
+    responseType?: string;
+    possibleIssue?: string;
+    errorType?: string;
+  };
 }
 
-type UPIValidationResponse = APIResponse;
-
-
-interface OrderCreationResponse extends APIResponse {
-  orderId: string;
-  amount: number;
-  currency: string;
-}
-
-type PaymentVerificationResponse = APIResponse;
-
-// API service functions
-const paymentAPI = {
-  validateUPI: async (upiId: string): Promise<UPIValidationResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/validate-upi`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ upiId })
-    });
-    return response.json();
+// API service for LG-Pay - Simplified without minimum validation
+const lgPayAPI = {
+  createOrder: async (amount: number): Promise<LGPayResponse> => {
+    // console.log('🔵 Frontend: Creating order with amount (rupees):', amount);
+    
+    // Basic validation - only check for valid number
+    if (!amount || isNaN(amount) || amount <= 0) {
+      // console.log('❌ Invalid amount:', amount);
+      
+      return {
+        success: false,
+        message: `Invalid amount: ₹${amount}`,
+        debug: {
+          errorType: 'INVALID_AMOUNT',
+          possibleIssue: 'Amount must be a positive number'
+        }
+      };
+    }
+    
+    // console.log('✅ Amount validation passed, proceeding with API call');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/create-order`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          amount,
+          debug: {
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+            frontendValidation: 'PASSED'
+          }
+        })
+      });
+      
+      const data = await response.json();
+      // console.log('📥 Frontend: Received response:', data);
+      
+      return data;
+    } catch (error) {
+      // console.error('❌ Frontend: API call failed:', error);
+      throw error;
+    }
   },
 
-  createOrder: async (orderData: Record<string, unknown>): Promise<OrderCreationResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/create-order`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
-    });
-    return response.json();
-  },
-
-  verifyPayment: async (paymentData: Record<string, unknown>): Promise<PaymentVerificationResponse> => {
-    const response = await fetch(`${API_BASE_URL}/api/verify-payment`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(paymentData)
-    });
+  checkHealth: async (): Promise<{ status: string; message: string }> => {
+    const response = await fetch(`${API_BASE_URL}/health`);
     return response.json();
   }
 };
-
-// Razorpay types
-interface RazorpayResponse {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
-}
-
-interface RazorpayOptions {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  order_id: string;
-  prefill: {
-    name: string;
-    email: string;
-    contact: string;
-  };
-  notes: {
-    address: string;
-    upi_id: string;
-  };
-  theme: {
-    color: string;
-  };
-  method: {
-    upi: boolean;
-    card: boolean;
-    netbanking: boolean;
-    wallet: boolean;
-  };
-  handler: (response: RazorpayResponse) => Promise<void>;
-  modal: {
-    ondismiss: () => void;
-  };
-}
-
-// declare global {
-//   interface Window {
-//     Razorpay: new (options: RazorpayOptions) => {
-//       open: () => void;
-//     };
-//     upiValidationTimeout?: NodeJS.Timeout;
-//   }
-// }
 
 // Step interface
 interface CheckoutStep {
@@ -118,16 +101,10 @@ interface CheckoutStep {
   completed: boolean;
 }
 
-// UPI validation status type
-interface UPIValidationStatus {
-  isValid: boolean;
-  message: string;
-}
-
-// Enhanced Order interface with payment details
+// Enhanced Order interface with LG-Pay details
 interface EnhancedOrder extends Order {
-  paymentId?: string;
-  razorpayOrderId?: string;
+  orderSN?: string;
+  lgPayResponse?: any;
 }
 
 // Address validation errors type
@@ -138,15 +115,11 @@ const Checkout: React.FC = () => {
   const { cart, updateQuantity, removeFromCart, getTotalPrice, clearCart } = useCart();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [selectedUpiProvider, setSelectedUpiProvider] = useState<string>('gpay');
-  const [upiId, setUpiId] = useState<string>('');
   const [lastOrder, setLastOrder] = useState<EnhancedOrder | null>(null);
   const { user } = useUser();
   
   // Loading states
-  const [isValidatingUPI, setIsValidatingUPI] = useState<boolean>(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState<boolean>(false);
-  const [upiValidationStatus, setUpiValidationStatus] = useState<UPIValidationStatus | null>(null);
 
   const [address, setAddress] = useState<Address>({
     fullName: user ? `${user.firstName} ${user.lastName}` : '',
@@ -158,27 +131,100 @@ const Checkout: React.FC = () => {
     roadName: ''
   });
   const [addressErrors, setAddressErrors] = useState<AddressErrors>({});
-  const [selectedPayment, setSelectedPayment] = useState<string>('upi');
   const { placeOrder } = useOrders();
 
-  const getDiscountInfo = (): { subtotal: number; discount: number; total: number } => {
+  // Enhanced order total calculation with minimum order logic
+  const getOrderTotal = (): { 
+    subtotal: number; 
+    discount: number; 
+    convenienceFee: number; 
+    total: number; 
+    isMinimumOrder: boolean;
+    shortfall: number;
+  } => {
     const quantity = cart.reduce((s, i) => s + i.quantity, 0);
     const subtotal = getTotalPrice();
     const discount = computeGaneshOfferDiscount(subtotal, quantity);
-    const total = subtotal - discount;
-    return { subtotal, discount, total };
+    const afterDiscount = Math.max(0, subtotal - discount);
+    
+    const MINIMUM_ORDER_VALUE = 101;
+    const isMinimumOrder = afterDiscount < MINIMUM_ORDER_VALUE;
+    const shortfall = isMinimumOrder ? (MINIMUM_ORDER_VALUE - afterDiscount) : 0;
+    const convenienceFee = shortfall; // Add convenience fee to meet minimum
+    const total = afterDiscount + convenienceFee;
+    
+    return { subtotal, discount, convenienceFee, total, isMinimumOrder, shortfall };
   };
 
-  const steps: CheckoutStep[] = [
-    { id: 1, name: 'Cart', completed: true },
+  // Minimum order suggestions for add-on products
+  const getMinimumOrderSuggestions = (): { 
+    showSuggestions: boolean; 
+    shortfall: number; 
+    suggestedProducts: any[] 
+  } => {
+    const { shortfall, isMinimumOrder } = getOrderTotal();
+    
+    if (isMinimumOrder && shortfall > 0) {
+      // Mock suggested products (replace with actual product data)
+      const suggestedProducts = [
+        { id: 'addon1', name: 'Gift Wrapping', price: 15, type: 'service' },
+        { id: 'addon2', name: 'Express Delivery', price: 25, type: 'service' },
+        { id: 'addon3', name: 'Delivery Protection', price: 9, type: 'service' },
+        { id: 'addon4', name: 'Premium Packaging', price: 20, type: 'service' }
+      ].filter(product => product.price <= shortfall + 20); // Show products within reasonable range
+      
+      return { showSuggestions: true, shortfall, suggestedProducts };
+    }
+    
+    return { showSuggestions: false, shortfall: 0, suggestedProducts: [] };
+  };
+
+  // Dynamic steps calculation
+  const getSteps = (): CheckoutStep[] => [
+    { id: 1, name: 'Cart', completed: currentStep > 1 },
     { id: 2, name: 'Address', completed: currentStep > 2 },
     { id: 3, name: 'Payment', completed: currentStep > 3 },
-    { id: 4, name: 'Summary', completed: false }
+    { id: 4, name: 'Summary', completed: currentStep > 4 }
   ];
 
-  // Removed auto-redirect to home to avoid racing when cart is still loading
+  // Navigation functions
+  const navigateToStep = (stepNumber: number): void => {
+    if (stepNumber < currentStep || stepNumber === 1) {
+      // console.log(`Navigating from step ${currentStep} to step ${stepNumber}`);
+      setCurrentStep(stepNumber);
+    }
+  };
 
-  // no-op: reverted deep-linking to payment
+  const handleBackNavigation = (): void => {
+    switch (currentStep) {
+      case 1: // Cart - go back to home/previous page
+        navigate(-1);
+        break;
+      case 2: // Address - go back to Cart
+        setCurrentStep(1);
+        break;
+      case 3: // Payment - go back to Address
+        setCurrentStep(2);
+        break;
+      case 4: // Summary - go to orders page or home
+        navigate('/orders');
+        break;
+      default:
+        navigate(-1);
+    }
+  };
+
+  // Check if cart is empty and redirect
+  useEffect(() => {
+    if (cart.length === 0 && currentStep !== 4) {
+      const timer = setTimeout(() => {
+        if (currentStep !== 4) {
+          navigate('/');
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [cart.length, currentStep, navigate]);
 
   const validateAddress = (addr: Address): boolean => {
     const errors: AddressErrors = {};
@@ -203,41 +249,6 @@ const Checkout: React.FC = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // UPI validation with API call
-  const handleUPIValidation = async (inputUpiId: string): Promise<void> => {
-    if (!inputUpiId.trim()) {
-      setUpiValidationStatus(null);
-      return;
-    }
-
-    setIsValidatingUPI(true);
-    try {
-      const result = await paymentAPI.validateUPI(inputUpiId);
-      if (result.success) {
-        setUpiValidationStatus({ isValid: true, message: 'UPI ID is valid' });
-      } else {
-        setUpiValidationStatus({ isValid: false, message: result.message });
-      }
-    } catch (error) {
-      console.error('UPI validation error:', error);
-      setUpiValidationStatus({ isValid: false, message: 'Unable to validate UPI ID' });
-    } finally {
-      setIsValidatingUPI(false);
-    }
-  };
-
-  const handleUPIChange = (value: string): void => {
-    const sanitized = value.replace(/\s+/g, '');
-    setUpiId(sanitized);
-    // Debounce validation
-    if (window.upiValidationTimeout) {
-      clearTimeout(window.upiValidationTimeout);
-    }
-    window.upiValidationTimeout = setTimeout(() => {
-      handleUPIValidation(sanitized);
-    }, 500);
-  };
-
   const handleAddressSubmit = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
     if (!validateAddress(address)) {
@@ -251,355 +262,548 @@ const Checkout: React.FC = () => {
     setCurrentStep(3);
   };
 
-  // Load Razorpay script
-  const loadRazorpayScript = (): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
   const handlePayment = async (): Promise<void> => {
-    if (selectedPayment === 'upi') {
-      const upiClean = upiId.replace(/\s+/g, '');
-      if (!upiClean) {
-        toast({ title: 'Enter UPI ID', description: 'Please provide your UPI ID to continue.' });
-        return;
-      }
-      if (upiValidationStatus && !upiValidationStatus.isValid) {
-        toast({ title: 'Invalid UPI ID', description: 'Please enter a valid UPI ID.' });
-        return;
-      }
-    }
-
+    // console.log('🎯 Payment process started...');
     setIsProcessingPayment(true);
 
     try {
-      // Load Razorpay script
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        toast({ title: 'Error', description: 'Failed to load payment gateway' });
+      // Calculate total amount in rupees
+      const { total } = getOrderTotal();
+      // console.log('💰 Frontend: Payment amount (rupees):', total);
+      
+      // Basic validation - only check for positive amount
+      if (!total || isNaN(total) || total <= 0) {
+        // console.log('❌ Invalid total amount calculated:', total);
+        toast({
+          title: 'Calculation Error',
+          description: 'Unable to calculate order total. Please refresh and try again.',
+          variant: 'destructive'
+        });
         return;
       }
-
-      // Calculate total amount
-      const { total } = getDiscountInfo();
-      const amountInPaisa = total * 100; // Convert to paisa
-
-      // Create order
-      const upiClean = upiId.replace(/\s+/g, '');
-      const orderData = {
-        amount: amountInPaisa,
-        currency: 'INR',
-        upiId: upiClean,
-        paymentMethod: selectedUpiProvider,
-        customerDetails: {
-          name: address.fullName,
-          email: user?.email || 'customer@example.com',
-          contact: address.mobile
-        }
-      };
-
-      const orderResponse = await paymentAPI.createOrder(orderData);
+      
+      // Check if cart is empty
+      if (cart.length === 0) {
+        // console.log('❌ Cart is empty during payment');
+        toast({
+          title: 'Cart Empty',
+          description: 'Your cart is empty. Please add items before proceeding.',
+          variant: 'destructive'
+        });
+        navigate('/');
+        return;
+      }
+      
+      // console.log(`✅ Proceeding with payment for ₹${total}`);
+      
+      // Create order with LG-Pay
+      const orderResponse = await lgPayAPI.createOrder(total);
+      
+      // console.log('📥 Frontend: Order response received:', orderResponse);
 
       if (!orderResponse.success) {
-        toast({ title: 'Error', description: orderResponse.message });
+        // console.error('❌ Order creation failed:', orderResponse);
+        
+        // Enhanced error handling
+        let errorTitle = 'Order Creation Failed';
+        let errorMessage = orderResponse.message || 'Unable to create order.';
+        
+        // Handle specific error types
+        if (orderResponse.debug?.errorType === 'INVALID_AMOUNT') {
+          errorTitle = 'Invalid Order Amount';
+          errorMessage = 'Please check your order total and try again.';
+        } else if (orderResponse.debug?.errorType === 'LGPAY_CHANNEL_RESTRICTION') {
+          errorTitle = 'Payment Method Limitation';
+          errorMessage = `UPI payments are not available for ₹${orderResponse.debug?.amountSentInRupees}. Please try adding more items or contact support for alternative payment methods.`;
+        } else if (orderResponse.debug?.errorType === 'LGPAY_GATEWAY_MINIMUM') {
+          errorTitle = 'Payment Gateway Limitation';
+          errorMessage = `The payment gateway requires a minimum amount. ${orderResponse.message}`;
+        } else if (orderResponse.debug?.errorType === 'SIGNATURE_ERROR') {
+          errorTitle = 'Payment Gateway Error';
+          errorMessage = 'Payment gateway configuration issue. Please try again or contact support.';
+        } else if (orderResponse.debug?.errorType === 'LGPAY_ERROR') {
+          errorTitle = 'Payment Gateway Error';
+          errorMessage = `Payment gateway responded with: ${orderResponse.message}`;
+        }
+        
+        toast({ 
+          title: errorTitle, 
+          description: errorMessage,
+          variant: 'destructive'
+        });
+        
         return;
       }
 
-      // Razorpay options
-      const options: RazorpayOptions = {
-        key: RAZORPAY_KEY_ID,
-        amount: orderResponse.amount,
-        currency: orderResponse.currency,
-        name: 'Your Store Name',
-        description: `Order for ${cart.length} items`,
-        order_id: orderResponse.orderId,
-        prefill: {
-          name: address.fullName,
-          email: user?.email || '',
-          contact: address.mobile,
-        },
-        notes: {
-          address: `${address.houseNo}, ${address.roadName}, ${address.city}`,
-          upi_id: upiClean
-        },
-        theme: {
-          color: '#8B5CF6'
-        },
-        method: {
-          upi: selectedPayment === 'upi',
-          card: selectedPayment === 'card',
-          netbanking: selectedPayment === 'netbanking',
-          wallet: selectedPayment === 'wallet'
-        },
-        handler: async function (response: RazorpayResponse): Promise<void> {
-          try {
-            // Verify payment
-            const verificationResult = await paymentAPI.verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature
-            });
+      // Create local order record
+      const order = placeOrder(cart, address, 'lgpay-online');
+      setLastOrder({
+        ...order,
+        orderSN: orderResponse.order_sn,
+        lgPayResponse: orderResponse.response
+      });
 
-            if (verificationResult.success) {
-              // Payment successful
-              const order = placeOrder(cart, address, `${selectedPayment}-${selectedUpiProvider}`);
-              setLastOrder({
-                ...order,
-                paymentId: response.razorpay_payment_id,
-                razorpayOrderId: response.razorpay_order_id
-              });
-              
-              toast({
-                title: 'Payment Successful!',
-                description: `Order ${order.id} confirmed.`,
-              });
-              
-              clearCart();
-              setCurrentStep(4);
-            } else {
-              toast({
-                title: 'Payment Verification Failed',
-                description: 'Please contact support if amount was deducted.',
-              });
-            }
-          } catch (error) {
-            console.error('Payment verification error:', error);
-            toast({
-              title: 'Payment Verification Error',
-              description: 'Please contact support.',
-            });
-          }
-        },
-        modal: {
-          ondismiss: function(): void {
-            toast({
-              title: 'Payment Cancelled',
-              description: 'You can retry the payment anytime.',
-            });
-          }
-        }
-      };
+      // Store order info in sessionStorage for return handling
+      sessionStorage.setItem('pendingOrder', JSON.stringify({
+        orderId: order.id,
+        orderSN: orderResponse.order_sn,
+        amount: total
+      }));
 
-      // Open Razorpay checkout
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
+      // Look for payment URL in response
+      const paymentUrl = orderResponse.response?.pay_url || 
+                        orderResponse.response?.payment_url ||
+                        orderResponse.response?.payUrl ||
+                        orderResponse.response?.url ||
+                        orderResponse.response?.redirect_url ||
+                        orderResponse.response?.qr_url ||
+                        orderResponse.response?.paylink ||
+                        orderResponse.response?.link;
+      
+      // console.log('🔗 Detected payment URL:', paymentUrl);
+      
+      if (paymentUrl) {
+        // console.log('➡️  Redirecting to LG-Pay payment gateway...');
+        
+        toast({
+          title: 'Redirecting to Payment',
+          description: 'Taking you to secure LG-Pay gateway...',
+        });
+        
+        // Show a brief loading state, then redirect
+        setTimeout(() => {
+          // console.log('🌐 Redirecting to:', paymentUrl);
+          window.location.href = paymentUrl;
+        }, 2000);
+        
+      } else {
+        // console.log('⚠️  No payment URL found in response');
+        // console.log('📋 Full response for analysis:', orderResponse);
+        
+        // Show error with debug info
+        toast({
+          title: 'Payment Gateway Error',
+          description: 'No payment URL received from LG-Pay. Please try again.',
+          variant: 'destructive'
+        });
+        
+        return;
+      }
 
     } catch (error) {
-      console.error('Payment error:', error);
+      // console.error('❌ Payment error:', error);
+      
+      // Enhanced network error handling
+      let errorMessage = 'Network error occurred. Please check your connection and try again.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('fetch')) {
+          errorMessage = 'Unable to connect to payment service. Please check your internet connection.';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = 'Payment service is taking too long to respond. Please try again.';
+        }
+      }
+      
       toast({
         title: 'Payment Error',
-        description: 'Something went wrong. Please try again.',
+        description: errorMessage,
+        variant: 'destructive'
       });
+      
     } finally {
       setIsProcessingPayment(false);
     }
   };
 
+  // Handle return from payment gateway
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const status = urlParams.get('status');
+    const orderSN = urlParams.get('order_sn');
+
+    if (status && orderSN) {
+      const pendingOrderData = sessionStorage.getItem('pendingOrder');
+      
+      if (pendingOrderData) {
+        const pendingOrder = JSON.parse(pendingOrderData);
+        
+        if (status === 'success') {
+          toast({
+            title: 'Payment Successful!',
+            description: `Order ${pendingOrder.orderId} confirmed.`,
+          });
+          
+          clearCart();
+          setCurrentStep(4);
+        } else if (status === 'failed') {
+          toast({
+            title: 'Payment Failed',
+            description: 'Your payment was not processed. Please try again.',
+            variant: 'destructive'
+          });
+        }
+        
+        // Clean up URL and session storage
+        sessionStorage.removeItem('pendingOrder');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    }
+  }, [clearCart, toast]);
+
   const handleDownloadInvoice = (): void => {
     if (!lastOrder) return;
+    
     const invoiceHtml = `
+      <!DOCTYPE html>
       <html>
         <head>
           <meta charset="utf-8" />
           <title>Invoice ${lastOrder.id}</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 24px; }
-            h1 { font-size: 18px; margin: 0 0 8px; }
-            .section { margin-bottom: 16px; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
-            th { background: #f5f5f5; text-align: left; }
-            .right { text-align: right; }
+            body { font-family: Arial, sans-serif; padding: 24px; max-width: 800px; margin: 0 auto; }
+            .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .company-name { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+            .invoice-title { font-size: 20px; color: #666; }
+            .section { margin-bottom: 20px; }
+            .section-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #333; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+            th { background: #f5f5f5; font-weight: bold; }
+            .text-right { text-align: right; }
+            .total-row { background: #f9f9f9; font-weight: bold; }
+            .order-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+            .customer-info { background: #f9f9f9; padding: 15px; border-radius: 5px; }
           </style>
         </head>
         <body>
-          <h1>Invoice</h1>
-          <div class="section">
-            <div><strong>Order ID:</strong> ${lastOrder.id}</div>
-            <div><strong>Payment ID:</strong> ${lastOrder.paymentId || 'N/A'}</div>
-            <div><strong>Date:</strong> ${new Date(lastOrder.createdAt).toLocaleString()}</div>
-            <div><strong>Payment:</strong> ${lastOrder.paymentMethod}</div>
+          <div class="header">
+            <div class="company-name">Messho Store</div>
+            <div class="invoice-title">INVOICE</div>
           </div>
-          <div class="section">
-            <div><strong>Ship To:</strong></div>
-            <div>${lastOrder.address.fullName}</div>
-            <div>${lastOrder.address.houseNo}, ${lastOrder.address.roadName}</div>
-            <div>${lastOrder.address.city}, ${lastOrder.address.state} - ${lastOrder.address.pincode}</div>
-            <div>${lastOrder.address.mobile}</div>
+          
+          <div class="order-info">
+            <div>
+              <div class="section-title">Order Details</div>
+              <div><strong>Order ID:</strong> ${lastOrder.id}</div>
+              <div><strong>Order SN:</strong> ${lastOrder.orderSN || 'N/A'}</div>
+              <div><strong>Date:</strong> ${new Date(lastOrder.createdAt).toLocaleString()}</div>
+              <div><strong>Payment Method:</strong> ${lastOrder.paymentMethod}</div>
+            </div>
+            
+            <div class="customer-info">
+              <div class="section-title">Billing & Shipping Address</div>
+              <div><strong>${lastOrder.address.fullName}</strong></div>
+              <div>${lastOrder.address.houseNo}, ${lastOrder.address.roadName}</div>
+              <div>${lastOrder.address.city}, ${lastOrder.address.state} - ${lastOrder.address.pincode}</div>
+              <div>Phone: ${lastOrder.address.mobile}</div>
+            </div>
           </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th>Size</th>
-                <th class="right">Qty</th>
-                <th class="right">Price</th>
-                <th class="right">Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${lastOrder.items.map(i => `
+
+          <div class="section">
+            <div class="section-title">Order Items</div>
+            <table>
+              <thead>
                 <tr>
-                  <td>${i.name}</td>
-                  <td>${i.size}</td>
-                  <td class="right">${i.quantity}</td>
-                  <td class="right">₹${i.price}.00</td>
-                  <td class="right">₹${i.price * i.quantity}.00</td>
+                  <th>Item Description</th>
+                  <th>Size</th>
+                  <th class="text-right">Quantity</th>
+                  <th class="text-right">Unit Price</th>
+                  <th class="text-right">Amount</th>
                 </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          <div class="section" style="text-align:right;margin-top:12px"><strong>Total: ₹${lastOrder.total}.00</strong></div>
+              </thead>
+              <tbody>
+                ${lastOrder.items.map(item => `
+                  <tr>
+                    <td>${item.name}</td>
+                    <td>${item.size}</td>
+                    <td class="text-right">${item.quantity}</td>
+                    <td class="text-right">₹${item.price}.00</td>
+                    <td class="text-right">₹${item.price * item.quantity}.00</td>
+                  </tr>
+                `).join('')}
+                <tr class="total-row">
+                  <td colspan="4" class="text-right"><strong>Total Amount</strong></td>
+                  <td class="text-right"><strong>₹${lastOrder.total}.00</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <p><strong>Thank you for your order!</strong></p>
+            <p>For any queries, please contact our customer support.</p>
+          </div>
         </body>
       </html>
     `;
+
     const win = window.open('', '_blank');
-    if (!win) return;
+    if (!win) {
+      toast({
+        title: 'Pop-up Blocked',
+        description: 'Please allow pop-ups to download the invoice.',
+      });
+      return;
+    }
+    
     win.document.write(invoiceHtml);
     win.document.close();
     win.focus();
-    win.print();
+    
+    setTimeout(() => {
+      win.print();
+    }, 500);
   };
 
-  if (cart.length === 0 && currentStep === 1) {
+  if (cart.length === 0 && currentStep < 4) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-500 mb-4">Your cart is empty</p>
-          <Button onClick={() => navigate('/')}>Continue Shopping</Button>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <div className="text-center bg-white rounded-xl p-8 shadow-lg max-w-sm w-full">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-gray-400 text-2xl">🛒</span>
+          </div>
+          <h2 className="text-xl font-semibold mb-2 text-gray-800">Your cart is empty</h2>
+          <p className="text-gray-500 mb-6 text-sm">Add some items to your cart to continue shopping</p>
+          <Button onClick={() => navigate('/')} className="w-full bg-purple-600 hover:bg-purple-700">
+            Continue Shopping
+          </Button>
         </div>
       </div>
     );
   }
 
+  const steps = getSteps();
+
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
-      {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-40">
-        <div className="px-4 py-3">
+    <div className="min-h-screen bg-gray-50">
+      {/* Header - Clean & Fixed */}
+      <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
+        <div className="w-full max-w-md mx-auto px-4 py-3">
           <div className="flex items-center">
-            <button onClick={() => navigate(-1)} className="mr-3">
-              <ArrowLeft className="text-gray-600 h-6 w-6" />
+            <button 
+              onClick={handleBackNavigation} 
+              className="mr-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
+            >
+              <ArrowLeft className="text-gray-600 h-5 w-5" />
             </button>
-            <h2 className="text-xl font-semibold">
-              {currentStep === 1 ? 'CART' : 
-               currentStep === 2 ? 'ADD DELIVERY ADDRESS' : 
-               currentStep === 3 ? 'PAYMENT' : 'ORDER SUMMARY'}
-            </h2>
+            <h1 className="text-lg font-semibold text-gray-900">
+              {currentStep === 1 ? 'Cart' : 
+               currentStep === 2 ? 'Delivery Address' : 
+               currentStep === 3 ? 'Payment' : 'Order Confirmed'}
+            </h1>
           </div>
         </div>
       </header>
 
-      {/* Stepper */}
-      <div className="bg-white px-4 py-4">
-        <div className="flex items-center justify-between">
-          {steps.map((step, index) => (
-            <div key={step.id} className="flex items-center">
-              <div className="flex items-center">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${
-                  step.completed 
-                    ? 'bg-fashion-purple text-white' 
-                    : currentStep === step.id
-                    ? 'bg-fashion-purple text-white'
-                    : 'bg-gray-300 text-gray-600'
-                }`}>
-                  {step.completed ? '✓' : step.id}
+      {/* Working Stepper Navigation */}
+      <div className="bg-white border-b border-gray-100">
+        <div className="w-full max-w-md mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            {steps.map((step, index) => {
+              const isClickable = step.id < currentStep; // Can click on previous steps
+              const isActive = currentStep === step.id;
+              const isPrevious = step.id < currentStep;
+              
+              return (
+                <div key={step.id} className="flex items-center min-w-0">
+                  <div className="flex flex-col items-center">
+                    {/* Clickable Step Circle */}
+                    <button
+                      onClick={() => {
+                        if (isClickable) {
+                          navigateToStep(step.id);
+                        }
+                      }}
+                      disabled={!isClickable}
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-1 transition-all duration-200 ${
+                        isPrevious
+                          ? 'bg-green-600 text-white cursor-pointer hover:bg-green-700 hover:scale-110 shadow-lg'
+                          : isActive
+                          ? 'bg-purple-600 text-white'
+                          : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      {isPrevious ? '✓' : step.id}
+                    </button>
+                    
+                    {/* Step Name */}
+                    <span className={`text-xs font-medium text-center ${
+                      isPrevious || isActive ? 'text-purple-600' : 'text-gray-500'
+                    }`}>
+                      {step.name}
+                    </span>
+                    
+                    {/* Edit Link for Previous Steps */}
+                    {isPrevious && (
+                      <button
+                        onClick={() => navigateToStep(step.id)}
+                        className="text-[10px] text-blue-600 hover:text-blue-800 cursor-pointer font-medium hover:underline"
+                      >
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Progress Line */}
+                  {index < steps.length - 1 && (
+                    <div className={`h-px flex-1 mx-2 mt-3 ${
+                      isPrevious ? 'bg-green-300' : 'bg-gray-300'
+                    }`}></div>
+                  )}
                 </div>
-                <span className="ml-2 text-xs truncate max-w-[72px]">{step.name}</span>
-              </div>
-              {index < steps.length - 1 && (
-                <div className="flex-1 h-px bg-gray-300 mx-2 md:mx-4"></div>
-              )}
+              );
+            })}
+          </div>
+          
+          {/* Clear Navigation Instructions */}
+          {currentStep > 1 && (
+            <div className="mt-3 text-center">
+              <p className="text-xs text-green-600 font-medium">
+                ✓ Click on completed steps to edit
+              </p>
             </div>
-          ))}
+          )}
         </div>
       </div>
 
-      <main className="pb-28 w-full max-w-[430px] mx-auto">
+      {/* Main Content - Enhanced Layout */}
+      <main className="w-full max-w-md mx-auto pb-32 min-h-screen">
         {/* Step 1: Cart */}
         {currentStep === 1 && (
-          <div className="p-4">
-            <div className="space-y-4">
-              {cart.map((item: CartItem) => (
-                <div key={`${item.id}-${item.size}`} className="bg-white rounded-lg p-4 flex space-x-4">
+          <div className="p-4 space-y-3">
+            {cart.map((item: CartItem) => (
+              <div key={`${item.id}-${item.size}`} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                <div className="flex space-x-3">
                   <img 
                     src={item.image} 
                     alt={item.name}
-                    className="w-20 h-24 object-cover rounded"
+                    className="w-18 h-20 object-cover rounded-lg flex-shrink-0"
                   />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-sm mb-1">{item.name}</h3>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium text-sm mb-1 line-clamp-2 text-gray-800">{item.name}</h3>
                     <div className="flex items-center space-x-2 mb-2">
-                      <span className="font-semibold">₹{item.price}</span>
-                      <span className="text-gray-400 line-through text-sm">₹{item.originalPrice}</span>
+                      <span className="font-bold text-purple-600">₹{item.price}</span>
+                      <span className="text-gray-400 line-through text-xs">₹{item.originalPrice}</span>
                     </div>
-                    <p className="text-sm text-gray-600 mb-2">Size: {item.size}</p>
+                    <p className="text-xs text-gray-500 mb-2">Size: {item.size}</p>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
                         <button 
                           onClick={() => updateQuantity(item.id, item.size, -1)}
-                          className="w-8 h-8 rounded-full border flex items-center justify-center"
+                          className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm"
+                          disabled={item.quantity <= 1}
                         >
                           -
                         </button>
-                        <span>Qty: {item.quantity.toString().padStart(2, '0')}</span>
+                        <span className="min-w-[40px] text-center font-medium text-sm">
+                          {item.quantity.toString().padStart(2, '0')}
+                        </span>
                         <button 
                           onClick={() => updateQuantity(item.id, item.size, 1)}
-                          className="w-8 h-8 rounded-full border flex items-center justify-center"
+                          className="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center hover:border-purple-400 hover:bg-purple-50 transition-colors text-sm"
                         >
                           +
                         </button>
                       </div>
                       <button 
                         onClick={() => removeFromCart(item.id, item.size)}
-                        className="text-gray-400"
+                        className="text-red-400 hover:text-red-600 p-1 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
 
-            <div className="bg-white rounded-lg p-4 mt-4">
+            {/* Minimum Order Suggestions */}
+            {(() => {
+              const { showSuggestions, shortfall, suggestedProducts } = getMinimumOrderSuggestions();
+              
+              // if (showSuggestions) {
+              //   return (
+              //     <div className="bg-orange-50 rounded-xl p-4 border border-orange-200 mt-4">
+              //       <h4 className="font-medium text-orange-800 mb-2">
+              //         Add ₹{shortfall} more to place your order
+              //       </h4>
+              //       <p className="text-sm text-orange-600 mb-3">
+              //         Minimum order value is ₹101. Choose from these add-ons:
+              //       </p>
+              //       <div className="space-y-2">
+              //         {suggestedProducts.map(product => (
+              //           <div key={product.id} className="flex items-center justify-between bg-white p-2 rounded border">
+              //             <span className="text-sm font-medium">{product.name}</span>
+              //             <div className="flex items-center space-x-2">
+              //               <span className="text-sm font-bold text-orange-600">₹{product.price}</span>
+              //               <Button 
+              //                 size="sm" 
+              //                 variant="outline"
+              //                 className="text-xs px-2 py-1"
+              //                 onClick={() => {
+              //                   toast({
+              //                     title: 'Feature Coming Soon',
+              //                     description: 'Add-on products will be available soon!',
+              //                   });
+              //                 }}
+              //               >
+              //                 Add
+              //               </Button>
+              //             </div>
+              //           </div>
+              //         ))}
+              //       </div>
+              //     </div>
+              //   );
+              // }
+              return null;
+            })()}
+
+            {/* Cart Summary */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mt-4">
+              <h3 className="font-semibold text-gray-800 mb-3">Order Summary</h3>
               {(() => {
-                const quantity = cart.reduce((s, i) => s + i.quantity, 0);
-                const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
-                const finalTotal = getTotalPrice() - discount;
+                const { subtotal, discount, convenienceFee, total, isMinimumOrder } = getOrderTotal();
+                
                 return (
-                  <div className="space-y-2">
+                  <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span>Cart Total:</span>
+                      <span className="text-gray-600">Cart Total:</span>
                       {discount > 0 ? (
-                        <span className="font-semibold whitespace-nowrap">
-                          <span className="line-through mr-2">₹{getTotalPrice()}.00</span>
-                          <span className="text-green-600">₹{finalTotal}.00</span>
+                        <span className="font-semibold">
+                          <span className="line-through text-gray-400 mr-2">₹{subtotal}</span>
+                          <span className="text-green-600">₹{subtotal - discount}</span>
                         </span>
                       ) : (
-                        <span className="font-semibold">₹{getTotalPrice()}.00</span>
+                        <span className="font-semibold text-gray-800">₹{subtotal}</span>
                       )}
                     </div>
                     {discount > 0 && (
                       <div className="flex justify-between text-green-600">
                         <span>Ganesh Offer (30% off)</span>
-                        <span>-₹{discount}.00</span>
+                        <span>-₹{discount}</span>
+                      </div>
+                    )}
+                    {convenienceFee > 0 && (
+                      <div className="flex justify-between text-orange-600">
+                        <span>Convenience Fee (Min. order ₹101)</span>
+                        <span>+₹{convenienceFee}</span>
                       </div>
                     )}
                     <div className="flex justify-between">
-                      <span>Shipping:</span>
+                      <span className="text-gray-600">Shipping:</span>
                       <span className="text-green-600 font-medium">FREE</span>
                     </div>
-                    <hr />
-                    <div className="flex justify-between font-semibold">
-                      <span>To Pay:</span>
-                      <span className="whitespace-nowrap">₹{finalTotal}.00</span>
+                    <hr className="border-gray-200 my-2" />
+                    <div className="flex justify-between font-bold text-lg">
+                      <span className="text-gray-800">To Pay:</span>
+                      <span className="text-purple-600">₹{total}</span>
                     </div>
+                    {isMinimumOrder && (
+                      <div className="text-xs text-orange-600 mt-2 bg-orange-50 p-2 rounded">
+                        * Convenience fee applied due to minimum order value of ₹101
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -610,21 +814,33 @@ const Checkout: React.FC = () => {
         {/* Step 2: Address */}
         {currentStep === 2 && (
           <div className="p-4">
-            <div className="bg-white rounded-lg p-4">
-              <h3 className="text-lg font-semibold mb-4 flex items-center">
+            {/* Back to Cart Button - Prominent */}
+            <div className="mb-4">
+              <button
+                onClick={() => setCurrentStep(1)}
+                className="flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors bg-purple-50 hover:bg-purple-100 px-3 py-2 rounded-lg"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Cart
+              </button>
+            </div>
+
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <h3 className="text-lg font-semibold mb-4 flex items-center text-gray-800">
                 <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                   📍
                 </span>
-                Address
+                Delivery Address
               </h3>
               
               <form id="address-form" onSubmit={handleAddressSubmit} className="space-y-4">
                 <div>
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName" className="text-sm font-medium text-gray-700">Full Name *</Label>
                   <Input
                     id="fullName"
                     value={address.fullName}
                     onChange={(e) => setAddress({...address, fullName: e.target.value})}
+                    className={`mt-1 ${addressErrors.fullName ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.fullName && (
@@ -633,12 +849,13 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="mobile">Mobile number</Label>
+                  <Label htmlFor="mobile" className="text-sm font-medium text-gray-700">Mobile Number *</Label>
                   <Input
                     id="mobile"
                     type="tel"
                     value={address.mobile}
                     onChange={(e) => setAddress({...address, mobile: e.target.value})}
+                    className={`mt-1 ${addressErrors.mobile ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.mobile && (
@@ -647,11 +864,12 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="pincode">Pincode</Label>
+                  <Label htmlFor="pincode" className="text-sm font-medium text-gray-700">Pincode *</Label>
                   <Input
                     id="pincode"
                     value={address.pincode}
                     onChange={(e) => setAddress({...address, pincode: e.target.value})}
+                    className={`mt-1 ${addressErrors.pincode ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.pincode && (
@@ -659,11 +877,14 @@ const Checkout: React.FC = () => {
                   )}
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="state">State</Label>
-                    <Select value={address.state} onValueChange={(value) => setAddress({...address, state: value, city: ''})}>
-                      <SelectTrigger>
+                    <Label htmlFor="state" className="text-sm font-medium text-gray-700">State *</Label>
+                    <Select 
+                      value={address.state} 
+                      onValueChange={(value) => setAddress({...address, state: value, city: ''})}
+                    >
+                      <SelectTrigger className={`mt-1 ${addressErrors.state ? 'border-red-500' : 'border-gray-200'} rounded-lg`}>
                         <SelectValue placeholder="Select State" />
                       </SelectTrigger>
                       <SelectContent>
@@ -677,9 +898,13 @@ const Checkout: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <Label htmlFor="city">City</Label>
-                    <Select value={address.city} onValueChange={(value) => setAddress({...address, city: value})}>
-                      <SelectTrigger>
+                    <Label htmlFor="city" className="text-sm font-medium text-gray-700">City *</Label>
+                    <Select 
+                      value={address.city} 
+                      onValueChange={(value) => setAddress({...address, city: value})}
+                      disabled={!address.state}
+                    >
+                      <SelectTrigger className={`mt-1 ${addressErrors.city ? 'border-red-500' : 'border-gray-200'} rounded-lg`}>
                         <SelectValue placeholder={address.state ? 'Select City' : 'Select State first'} />
                       </SelectTrigger>
                       <SelectContent>
@@ -695,11 +920,12 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="houseNo">House No., Building Name</Label>
+                  <Label htmlFor="houseNo" className="text-sm font-medium text-gray-700">House No., Building Name *</Label>
                   <Input
                     id="houseNo"
                     value={address.houseNo}
                     onChange={(e) => setAddress({...address, houseNo: e.target.value})}
+                    className={`mt-1 ${addressErrors.houseNo ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.houseNo && (
@@ -708,11 +934,12 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <div>
-                  <Label htmlFor="roadName">Road name, Area, Colony</Label>
+                  <Label htmlFor="roadName" className="text-sm font-medium text-gray-700">Road name, Area, Colony *</Label>
                   <Input
                     id="roadName"
                     value={address.roadName}
                     onChange={(e) => setAddress({...address, roadName: e.target.value})}
+                    className={`mt-1 ${addressErrors.roadName ? 'border-red-500' : 'border-gray-200'} rounded-lg`}
                     required
                   />
                   {addressErrors.roadName && (
@@ -722,19 +949,20 @@ const Checkout: React.FC = () => {
               </form>
             </div>
 
-            <div className="mt-4 text-center">
-              <div className="flex items-center justify-center space-x-4 text-xs text-gray-500">
+            {/* Security badges */}
+            <div className="mt-6 text-center">
+              <div className="flex items-center justify-center space-x-3 text-xs text-gray-500">
                 <span className="flex items-center">
-                  <span className="w-4 h-4 bg-blue-500 rounded mr-1"></span>
-                  PCI DSS Certified
+                  <span className="w-2 h-2 bg-blue-500 rounded-full mr-1"></span>
+                  PCI DSS
                 </span>
                 <span className="flex items-center">
-                  <span className="w-4 h-4 bg-green-500 rounded mr-1"></span>
-                  100% Secured Payments
+                  <span className="w-2 h-2 bg-green-500 rounded-full mr-1"></span>
+                  100% Secured
                 </span>
                 <span className="flex items-center">
-                  <span className="w-4 h-4 bg-purple-500 rounded mr-1"></span>
-                  Verified Merchant
+                  <span className="w-2 h-2 bg-purple-500 rounded-full mr-1"></span>
+                  Verified
                 </span>
               </div>
             </div>
@@ -743,136 +971,121 @@ const Checkout: React.FC = () => {
 
         {/* Step 3: Payment */}
         {currentStep === 3 && (
-          <div className="p-4">
-            <div className="bg-white rounded-lg p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">Select Payment Method</h3>
-                <div className="text-right">
-                  <div className="text-xs text-blue-600">100% SAFE</div>
-                  <div className="text-xs text-blue-600">PAYMENTS</div>
-                </div>
-              </div>
+          <div className="p-4 space-y-4">
+            {/* Back to Address Button - Prominent */}
+            <div className="mb-4">
+              <button
+                onClick={() => setCurrentStep(2)}
+                className="flex items-center text-purple-600 hover:text-purple-700 font-medium text-sm transition-colors bg-purple-50 hover:bg-purple-100 px-3 py-2 rounded-lg"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Address
+              </button>
+            </div>
 
-              <div className="bg-blue-50 p-3 rounded-lg mb-6 flex items-center">
-                <span className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center mr-3 text-white text-xs">
-                  pay
-                </span>
-                <span className="text-blue-600 font-medium">Pay online & get EXTRA ₹33 off</span>
-              </div>
-
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-medium mb-3">PAY ONLINE</h4>
-                  <label className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value="upi" 
-                      checked={selectedPayment === 'upi'}
-                      onChange={(e) => setSelectedPayment(e.target.value)}
-                      className="mr-3"
-                    />
-                    <span className="w-8 h-6 bg-blue-500 rounded flex items-center justify-center mr-3 text-white text-xs">
-                      UPI
-                    </span>
-                    <span>UPI(GPay/PhonePe/Paytm)</span>
-                  </label>
-                  {selectedPayment === 'upi' && (
-                    <div className="mt-3 space-y-3">
-                      <div className="flex items-center space-x-2">
-                        <button 
-                          className={`px-3 py-1 rounded border ${selectedUpiProvider === 'gpay' ? 'bg-purple-50 border-purple-400' : 'border-gray-300'}`} 
-                          onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('gpay'); }}
-                        >
-                          GPay
-                        </button>
-                        <button 
-                          className={`px-3 py-1 rounded border ${selectedUpiProvider === 'phonepe' ? 'bg-purple-50 border-purple-400' : 'border-gray-300'}`} 
-                          onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('phonepe'); }}
-                        >
-                          PhonePe
-                        </button>
-                        <button 
-                          className={`px-3 py-1 rounded border ${selectedUpiProvider === 'paytm' ? 'bg-purple-50 border-purple-400' : 'border-gray-300'}`} 
-                          onClick={(e) => { e.preventDefault(); setSelectedUpiProvider('paytm'); }}
-                        >
-                          Paytm
-                        </button>
-                      </div>
-                      <div>
-                        <label className="text-sm text-gray-600">Your UPI ID</label>
-                        <div className="relative">
-                          <input 
-                            className="mt-1 w-full border rounded px-3 py-2 text-sm pr-10" 
-                            placeholder="e.g. username@okicici" 
-                            value={upiId} 
-                            onChange={(e) => handleUPIChange(e.target.value)}
-                          />
-                          {isValidatingUPI && (
-                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-                        {upiValidationStatus && (
-                          <p className={`text-xs mt-1 ${upiValidationStatus.isValid ? 'text-green-600' : 'text-red-500'}`}>
-                            {upiValidationStatus.message}
-                          </p>
-                        )}
-                      </div>
+            {/* Price Summary */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <h3 className="font-semibold mb-3 text-gray-800">Order Summary</h3>
+              {(() => {
+                const { subtotal, discount, convenienceFee, total, isMinimumOrder } = getOrderTotal();
+                
+                return (
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Items Total:</span>
+                      <span className="text-gray-800">₹{subtotal}</span>
                     </div>
-                  )}
-                </div>
+                    {discount > 0 && (
+                      <div className="flex justify-between text-green-600">
+                        <span>Discount (Ganesh Offer):</span>
+                        <span>-₹{discount}</span>
+                      </div>
+                    )}
+                    {convenienceFee > 0 && (
+                      <div className="flex justify-between text-orange-600">
+                        <span>Convenience Fee (Min. order ₹101):</span>
+                        <span>+₹{convenienceFee}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Delivery:</span>
+                      <span className="text-green-600 font-medium">FREE</span>
+                    </div>
+                    <hr className="border-gray-200" />
+                    <div className="flex justify-between font-bold text-base">
+                      <span className="text-gray-800">Total Amount:</span>
+                      <span className="text-purple-600">₹{total}</span>
+                    </div>
+                    {isMinimumOrder && (
+                      <div className="text-xs text-orange-600 mt-2 bg-orange-50 p-2 rounded">
+                        * Convenience fee applied to meet minimum order value of ₹101
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
 
-                {/* Additional payment methods can be added here */}
-                <div className="border rounded-lg p-4 opacity-60">
-                  <h4 className="font-medium mb-3">OTHER METHODS</h4>
-                  <div className="space-y-2">
-                    <label className="flex items-center p-2 border rounded cursor-not-allowed opacity-50">
-                      <input type="radio" name="payment" value="card" disabled className="mr-3" />
-                      <span className="text-sm">Credit/Debit Card (Coming Soon)</span>
-                    </label>
-                    <label className="flex items-center p-2 border rounded cursor-not-allowed opacity-50">
-                      <input type="radio" name="payment" value="netbanking" disabled className="mr-3" />
-                      <span className="text-sm">Net Banking (Coming Soon)</span>
-                    </label>
-                    <label className="flex items-center p-2 border rounded cursor-not-allowed opacity-50">
-                      <input type="radio" name="payment" value="wallet" disabled className="mr-3" />
-                      <span className="text-sm">Wallet (Coming Soon)</span>
-                    </label>
+            {/* Payment Method */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-800">Payment Method</h3>
+                <div className="text-right">
+                  <div className="text-xs text-green-600 font-medium">100% SAFE</div>
+                  <div className="text-xs text-green-600 font-medium">PAYMENTS</div>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-4 rounded-lg mb-4 border border-purple-100">
+                <div className="flex items-center">
+                  <span className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center mr-3 text-white text-xs font-bold">
+                    LG
+                  </span>
+                  <div>
+                    <span className="text-purple-700 font-medium block">Pay securely with LG-Pay</span>
+                    <p className="text-xs text-purple-600">UPI, Cards, Net Banking & Wallets</p>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 space-y-2">
-                <div className="flex justify-between">
-                  <span>Shipping:</span>
-                  <span className="text-green-600 font-medium">FREE</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Total Product Price:</span>
-                  <span>₹{getTotalPrice()}.00</span>
-                </div>
-                {(() => {
-                  const quantity = cart.reduce((s, i) => s + i.quantity, 0);
-                  const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
-                  return discount > 0 ? (
-                    <div className="flex justify-between text-green-600">
-                      <span>Ganesh Offer (30% off)</span>
-                      <span>-₹{discount}.00</span>
+              <div className="border-2 border-purple-200 rounded-lg p-3 bg-purple-50">
+                <div className="flex items-center">
+                  <input 
+                    type="radio" 
+                    name="payment" 
+                    value="lgpay" 
+                    checked={true}
+                    readOnly
+                    className="mr-3 accent-purple-600"
+                  />
+                  <div className="flex items-center flex-1">
+                    <span className="w-8 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded flex items-center justify-center mr-3 text-white text-xs font-bold">
+                      PAY
+                    </span>
+                    <div>
+                      <span className="font-medium text-gray-800">Online Payment</span>
+                      <p className="text-xs text-gray-600">Multiple payment options</p>
                     </div>
-                  ) : null;
-                })()}
-                <hr />
-                <div className="flex justify-between font-semibold">
-                  <span>Order Total:</span>
-                  {(() => {
-                    const quantity = cart.reduce((s, i) => s + i.quantity, 0);
-                    const discount = computeGaneshOfferDiscount(getTotalPrice(), quantity);
-                    const total = getTotalPrice() - discount;
-                    return <span>₹{total}.00</span>;
-                  })()}
+                  </div>
                 </div>
+              </div>
+
+              <div className="mt-4 p-3 bg-green-50 rounded-lg border border-green-200">
+                <div className="flex items-center text-green-700 text-sm">
+                  <span className="mr-2">🔒</span>
+                  <span>Your payment information is encrypted and secure</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery Address Summary */}
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <h4 className="font-medium mb-2 text-gray-800">Deliver to:</h4>
+              <div className="text-sm text-gray-600">
+                <div className="font-medium text-gray-900">{address.fullName}</div>
+                <div>{address.houseNo}, {address.roadName}</div>
+                <div>{address.city}, {address.state} - {address.pincode}</div>
+                <div>Mobile: {address.mobile}</div>
               </div>
             </div>
           </div>
@@ -881,193 +1094,203 @@ const Checkout: React.FC = () => {
         {/* Step 4: Order Summary */}
         {currentStep === 4 && lastOrder && (
           <div className="p-4">
-            <div className="bg-white rounded-lg p-4 space-y-4">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+              {/* Success Header */}
+              <div className="bg-green-50 p-6 text-center border-b border-green-100">
+                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <span className="text-green-600 text-2xl">✓</span>
                 </div>
-                <h3 className="text-xl font-semibold text-green-600 mb-2">Payment Successful!</h3>
-                <p className="text-gray-600">Your order has been placed successfully</p>
+                <h2 className="text-xl font-bold text-green-600 mb-1">Order Placed!</h2>
+                <p className="text-gray-600 text-sm">Your order has been successfully placed</p>
               </div>
 
-              <div className="bg-gray-50 rounded-lg p-4 space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Order ID:</span>
-                  <span className="font-medium">{lastOrder.id}</span>
-                </div>
-                {lastOrder.paymentId && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Payment ID:</span>
-                    <span className="font-medium text-xs">{lastOrder.paymentId}</span>
+              {/* Order Details - Properly Contained */}
+              <div className="p-4">
+                <div className="bg-gray-50 rounded-lg p-3 space-y-2 text-sm mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order ID:</span>
+                    <span className="font-medium">{lastOrder.id}</span>
                   </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Payment Method:</span>
-                  <span className="font-medium capitalize">{lastOrder.paymentMethod}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-600">Order Date:</span>
-                  <span className="font-medium">{new Date(lastOrder.createdAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">Delivery Address</h4>
-                <div className="text-sm text-gray-600">
-                  <div className="font-medium text-gray-900">{lastOrder.address.fullName}</div>
-                  <div>{lastOrder.address.houseNo}, {lastOrder.address.roadName}</div>
-                  <div>{lastOrder.address.city}, {lastOrder.address.state} - {lastOrder.address.pincode}</div>
-                  <div>Mobile: {lastOrder.address.mobile}</div>
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h4 className="font-medium mb-3">Order Items</h4>
-                <div className="space-y-3">
-                  {lastOrder.items.map((item: OrderItem) => (
-                    <div key={`${item.id}-${item.size}`} className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">{item.name}</div>
-                        <div className="text-xs text-gray-600">Size: {item.size} • Qty: {item.quantity}</div>
-                      </div>
-                      <div className="font-medium">₹{item.price * item.quantity}.00</div>
+                  {lastOrder.orderSN && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Order SN:</span>
+                      <span className="font-medium">{lastOrder.orderSN}</span>
                     </div>
-                  ))}
+                  )}
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Payment Method:</span>
+                    <span className="font-medium">LG-Pay Online</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Order Date:</span>
+                    <span className="font-medium">{new Date(lastOrder.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <div className="border-t border-gray-200 pt-2 mt-2">
+                    <div className="flex justify-between font-semibold">
+                      <span>Total Paid:</span>
+                      <span className="text-green-600">₹{lastOrder.total}</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
 
-              <div className="border-t pt-4">
-                <div className="flex justify-between font-semibold text-lg">
-                  <span>Total Paid</span>
-                  <span className="text-green-600">₹{lastOrder.total}.00</span>
+                {/* Order Items - Improved Layout */}
+                <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                  <h4 className="font-medium mb-3 text-sm">Items Ordered</h4>
+                  <div className="space-y-2">
+                    {lastOrder.items.map((item: OrderItem) => (
+                      <div key={`${item.id}-${item.size}`} className="flex justify-between items-start text-sm">
+                        <div className="flex-1 min-w-0 pr-2">
+                          <div className="font-medium truncate">{item.name}</div>
+                          <div className="text-gray-600 text-xs">Size: {item.size} × {item.quantity}</div>
+                        </div>
+                        <div className="font-medium text-sm">₹{item.price * item.quantity}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-3 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={handleDownloadInvoice}
-                  className="w-full"
-                >
-                  Download Invoice (PDF)
-                </Button>
-                <Button 
-                  variant="fashion" 
-                  onClick={() => navigate('/orders')} 
-                  className="w-full"
-                >
-                  View All Orders
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => navigate('/')} 
-                  className="w-full"
-                >
-                  Continue Shopping
-                </Button>
+                {/* Action Buttons - Properly Spaced */}
+                <div className="space-y-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={handleDownloadInvoice}
+                    className="w-full text-sm"
+                    size="sm"
+                  >
+                    Download Invoice
+                  </Button>
+                  <Button 
+                    onClick={() => navigate('/orders')} 
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-sm"
+                    size="sm"
+                  >
+                    Track Order
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => navigate('/')} 
+                    className="w-full text-sm"
+                    size="sm"
+                  >
+                    Continue Shopping
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
         )}
       </main>
 
-      {/* Fixed Bottom Actions - constrained to mobile frame on desktop */}
-      <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-[430px] bg-white border-t p-4">
-        {currentStep === 1 && (
-          <>
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                {(() => { 
-                  const { subtotal, discount, total } = getDiscountInfo(); 
-                  return (
-                    <div className="font-semibold">
-                      {discount > 0 ? (
-                        <>
-                          <span className="line-through mr-2">₹{subtotal}.00</span>
-                          <span className="text-green-600">₹{total}.00</span>
-                        </>
-                      ) : (
-                        <span>₹{subtotal}.00</span>
-                      )}
-                    </div>
-                  ); 
-                })()}
-                <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
+      {/* Fixed Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="w-full max-w-md mx-auto p-4">
+          {currentStep === 1 && (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  {(() => { 
+                    const { subtotal, discount, convenienceFee, total, isMinimumOrder } = getOrderTotal(); 
+                    
+                    return (
+                      <div>
+                        <div className="font-bold text-lg">
+                          {discount > 0 ? (
+                            <>
+                              <span className="line-through text-gray-400 mr-2 text-sm">₹{subtotal}</span>
+                              <span className="text-green-600">₹{total}</span>
+                            </>
+                          ) : (
+                            <span className="text-gray-800">₹{total}</span>
+                          )}
+                        </div>
+                        {isMinimumOrder && (
+                          <div className="text-xs text-orange-600">
+                            (Incl. ₹{convenienceFee} convenience fee)
+                          </div>
+                        )}
+                      </div>
+                    ); 
+                  })()}
+                  <div className="text-xs text-blue-600 font-medium">VIEW PRICE DETAILS</div>
+                </div>
               </div>
+              
+              <Button 
+                size="lg" 
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl"
+                disabled={cart.length === 0}
+                onClick={() => {
+                  if (cart.length === 0) {
+                    toast({ title: 'Your cart is empty' });
+                    return;
+                  }
+                  setCurrentStep(2);
+                }}
+              >
+                Continue to Address
+              </Button>
             </div>
+          )}
+          
+          {currentStep === 2 && (
             <Button 
-              variant="fashion" 
               size="lg" 
-              className="w-full"
-              disabled={cart.length === 0}
-              onClick={() => {
-                if (cart.length === 0) {
-                  toast({ title: 'Your cart is empty' });
-                  return;
-                }
-                setCurrentStep(2);
-              }}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl"
+              type="submit"
+              form="address-form"
             >
-              Continue
+              Save Address & Continue
             </Button>
-          </>
-        )}
-        
-        {currentStep === 2 && (
-          <Button 
-            variant="fashion" 
-            size="lg" 
-            className="w-full"
-            type="submit"
-            form="address-form"
-          >
-            Save Address and Continue
-          </Button>
-        )}
-        
-        {currentStep === 3 && (
-          <>
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                {(() => { 
-                  const { subtotal, discount, total } = getDiscountInfo(); 
-                  return (
-                    <div className="font-semibold">
-                      {discount > 0 ? (
-                        <>
-                          <span className="line-through mr-2">₹{subtotal}.00</span>
-                          <span className="text-green-600">₹{total}.00</span>
-                        </>
-                      ) : (
-                        <span>₹{subtotal}.00</span>
-                      )}
-                    </div>
-                  ); 
-                })()}
-                <div className="text-sm text-blue-600 cursor-pointer">VIEW PRICE DETAILS</div>
+          )}
+          
+          {currentStep === 3 && (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div>
+                  {(() => { 
+                    const { subtotal, discount, convenienceFee, total, isMinimumOrder } = getOrderTotal(); 
+                    
+                    return (
+                      <div>
+                        <div className="font-bold text-lg">
+                          {discount > 0 ? (
+                            <>
+                              <span className="line-through text-gray-400 mr-2 text-sm">₹{subtotal}</span>
+                              <span className="text-green-600">₹{total}</span>
+                            </>
+                          ) : (
+                            <span className="text-gray-800">₹{total}</span>
+                          )}
+                        </div>
+                        {isMinimumOrder && (
+                          <div className="text-xs text-orange-600">
+                            (Incl. ₹{convenienceFee} convenience fee)
+                          </div>
+                        )}
+                      </div>
+                    ); 
+                  })()}
+                  <div className="text-xs text-blue-600 font-medium">Secure Payment with LG-Pay</div>
+                </div>
               </div>
+              <Button 
+                size="lg" 
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 rounded-xl"
+                onClick={handlePayment}
+                disabled={isProcessingPayment}
+              >
+                {isProcessingPayment ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                    Connecting to LG-Pay...
+                  </>
+                ) : (
+                  'Place Order & Pay'
+                )}
+              </Button>
             </div>
-            <Button 
-              variant="fashion" 
-              size="lg" 
-              className="w-full"
-              onClick={handlePayment}
-              disabled={
-                isProcessingPayment || 
-                (selectedPayment === 'upi' && (!upiId.trim() || (upiValidationStatus && !upiValidationStatus.isValid)))
-              }
-            >
-              {isProcessingPayment ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  Processing Payment...
-                </>
-              ) : (
-                'Pay Now'
-              )}
-            </Button>
-          </>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

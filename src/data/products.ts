@@ -244,8 +244,394 @@ import q25ko_4 from '@/assets/7q25ko/7q25ko_4.avif';
 
 
 
+// meanswear
+
+
+import auq88_1 from '@/assets/auq88/auq88.avif'
+import auq88_2 from '@/assets/auq88/auq88_2.avif'
+import auq88_3 from '@/assets/auq88/auq88_3.avif'
+import auq88_4 from '@/assets/auq88/auq88_4.avif'
+
+import kv4b_1 from '@/assets/1kv4b/1kv4b_1.avif';
+import kv4b_2 from '@/assets/1kv4b/1kv4b_2.avif';
+import kv4b_3 from '@/assets/1kv4b/1kv4b_3.avif';
+import kv4b_4 from '@/assets/1kv4b/1kv4b_4.avif';
+
+import d7un_1 from '@/assets/3d7un/3d7un_1.avif';
+import d7un_2 from '@/assets/3d7un/3d7un_2.avif';
+import d7un_3 from '@/assets/3d7un/3d7un_3.avif';
+import d7un_4 from '@/assets/3d7un/3d7un_4.avif';
+
+import qau1g_1 from '@/assets/qau1g/qau1g_1.avif';
+import qau1g_2 from '@/assets/qau1g/qau1g_2.avif';
+import qau1g_3 from '@/assets/qau1g/qau1g_3.avif';
+import qau1g_4 from '@/assets/qau1g/qau1g_4.avif';
+
+import lt60_1 from '@/assets/3lt60/3lt60_1.avif';
+import lt60_2 from '@/assets/3lt60/3lt60_2.avif';
+import lt60_3 from '@/assets/3lt60/3lt60_3.avif';
+import lt60_4 from '@/assets/3lt60/3lt60_4.avif';
+
+import kyq9_1 from '@/assets/4kyq9/4kyq9_1.avif'
+import kyq9_2 from '@/assets/4kyq9/4kyq9_2.avif'
+import kyq9_3 from '@/assets/4kyq9/4kyq9_3.avif'
+import kyq9_4 from '@/assets/4kyq9/4kyq9_4.avif'
+
+import ct_1 from '@/assets/377ct/377ct_1.avif';
+import ct_2 from '@/assets/377ct/377ct_2.avif';
+import ct_3 from '@/assets/377ct/377ct_3.avif';
+import ct_4 from '@/assets/377ct/377ct_4.avif';
+
+
+import nz2t_1 from '@/assets/13nz2t/13nz2t_1.avif'
+import nz2t_2 from '@/assets/13nz2t/13nz2t_2.avif'
+import nz2t_3 from '@/assets/13nz2t/13nz2t_3.avif'
+
+import f_12sss_1 from '@/assets/1f2sss/1f2sss_1.avif';
+import f_12sss_2 from '@/assets/1f2sss/1f2sss_2.avif';
+import f_12sss_3 from '@/assets/1f2sss/1f2sss_3.avif';
+import f_12sss_4 from '@/assets/1f2sss/1f2sss_4.avif';
+
+import jwuos_1 from '@/assets/1jwuos/1jwuos_1.avif';
+import jwuos_2 from '@/assets/1jwuos/1jwuos_2.avif';
+import jwuos_3 from '@/assets/1jwuos/1jwuos_3.avif';
+import jwuos_4 from '@/assets/1jwuos/1jwuos_4.avif';
+
+import o9tx7_1 from '@/assets/o9tx7/o9tx7_1.avif';
+import o9tx7_2 from '@/assets/o9tx7/o9tx7_2.avif';
+import o9tx7_3 from '@/assets/o9tx7/o9tx7_3.avif';
+import o9tx7_4 from '@/assets/o9tx7/o9tx7_4.avif';
+
+import popwm_1 from '@/assets/8popwm/8popwm_1.avif';
+import popwm_2 from '@/assets/8popwm/8popwm_2.avif';
+import popwm_3 from '@/assets/8popwm/8popwm_3.avif';
+import popwm_4 from '@/assets/8popwm/8popwm_4.avif';
+
+
 
 export const products: Product[] = [
+
+
+  // Meanswear
+  
+  {
+    id: "auq88",
+    name: "Fatty Mouse Men's Shirts",
+    price: 99,
+    originalPrice: 254,
+    discount: 38,
+    rating: 3.8,
+    reviews: 8705,
+    image: auq88_1,
+    images: [auq88_1,auq88_2,auq88_3,auq88_4],
+    category: "combo2",
+    sizes: [ "M", "L", "XL", "XXL"],
+    description: "Good to go for any casual formal or party wear look.",
+    fabric: "Cotton Blend",
+    care: "Machine Wash",
+    shipping: "10-12 Days",
+    details: {
+      kurta: [
+        "Fabric - Cotton Blend",
+        "Sleeve Length : Long Sleeves",
+        "Pattern : Solid",
+        "Net Quantity (N) : 1"
+      ]
+    }
+  },
+  {
+  "id": "kv4b",
+  "name": "Frekman Stylish Cotton Blend Check Men's Shirt",
+  "price": 99,
+  "originalPrice": 2254,
+  "discount": 96,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": kv4b_1,
+  "images": [kv4b_1, kv4b_2, kv4b_3, kv4b_4],
+  "category": "combo2",
+  "sizes": ["S", "M", "L"],
+  "description": "Freeman shirt created from the finest quality cotton fabric, featuring a natural textured feel that adds sophistication while keeping it relaxed all day long. Its versatile checked design with full sleeves makes it perfect for casual, formal, or party wear.",
+  "fabric": "Cotton",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Cotton",
+      "Sleeve Length : Long Sleeves",
+      "Pattern : Checked",
+      "Net Quantity (N) : 1"
+    ]
+  }
+  
+  },
+  {
+  "id": "3d7un",
+  "name": "Men's Cotton T-Shirt Half Sleeves Plain Cotton T-Shirt",
+  "price": 99,
+  "originalPrice": 2149,
+  "discount": 95,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": d7un_1,
+  "images": [d7un_1, d7un_2, d7un_3, d7un_4],
+  "category": "combo2",
+  "sizes": ["XS", "S", "L", "XL"],
+  "description": "Men's plain cotton T-shirt with half sleeves, designed for comfort and simplicity. A versatile choice for everyday wear that combines breathable fabric with a clean casual look.",
+  "fabric": "Cotton Blend",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Cotton Blend",
+      "Sleeve Length : Half Sleeves",
+      "Pattern : Plain",
+      "Net Quantity (N) : 1"
+    ]
+  }
+  },
+  {
+  "id": "qau1g",
+  "name": "Comfy Fashionista Men Shirts",
+  "price": 99,
+  "originalPrice": 342,
+  "discount": 71,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": qau1g_1,
+  "images": [qau1g_1, qau1g_2, qau1g_3, qau1g_4],
+  "category": "combo2",
+  "sizes": ["M", "L", "XL", "XXL"],
+  "description": "One piece of men’s cotton shirt featuring a comfortable fit, long sleeves, and printed pattern. Made in India, perfect for casual or semi-formal wear.",
+  "fabric": "Cotton",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Cotton",
+      "Sleeve Length : Long Sleeves",
+      "Pattern : Printed",
+      "Net Quantity (N) : 1",
+      "Country of Origin : India"
+    ]
+  }
+  },
+  {
+  "id": "3lt60",
+  "name": "Stylish Men's Polyester T-Shirts",
+  "price": 99,
+  "originalPrice": 164,
+  "discount": 40,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": lt60_1,
+  "images": [lt60_1, lt60_2, lt60_3, lt60_4],
+  "category": "combo2",
+  "sizes": ["L", "XL"],
+  "description": "Stylish men's polyester T-shirts, breathable and durable, perfect for daily wear. Long sleeves with a comfortable fit, ideal for casual or office use. Made in India.",
+  "fabric": "Polyester",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Polyester",
+      "Sleeve Length : Long Sleeve",
+      "Pattern : Plain",
+      "Net Quantity (N) : 1",
+      "Country of Origin : India"
+    ]
+  }
+  },
+  {
+  "id": "4kyq9",
+  "name": "Black & White Shirts for Men",
+  "price": 99,
+  "originalPrice": 415,
+  "discount": 76,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": kyq9_1,
+  "images": [kyq9_1, kyq9_2, kyq9_3, kyq9_4],
+  "category": "combo2",
+  "sizes": ["L", "XXL", "XXXL"],
+  "description": "Peter Europe white and check shirts for men, designed for comfort and style. Available in plus sizes, perfect for casual, office, or semi-formal occasions.",
+  "fabric": "Cotton",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Cotton",
+      "Length : Standard",
+      "Pattern : Check / White",
+      "Net Quantity (N) : 1"
+    ]
+  }
+  },
+  {
+  "id": "377ct",
+  "name": "Men's Party Wear T-Shirt Short Sleeve Polo Cotton T-Shirt",
+  "price": 99,
+  "originalPrice": 159,
+  "discount": 38,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": ct_1,
+  "images": [ct_1, ct_2, ct_3, ct_4],
+  "category": "combo2",
+  "sizes": ["M", "L", "XL"],
+  "description": "Men's party wear cotton T-shirt with short sleeves and polo style. Breathable and comfortable, perfect for summer and casual outings, with a trendy buttoned placket for style.",
+  "fabric": "Cotton Blend",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Cotton Blend",
+      "Sleeve Length : Long Sleeve",
+      "Pattern : Plain",
+      "Net Quantity (N) : 1"
+    ]
+  }
+  },
+  {
+  "id": "13nz2t",
+  "name": "Track Pants",
+  "price": 99,
+  "originalPrice": 282,
+  "discount": 65,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": nz2t_1,
+  "images": [nz2t_1, nz2t_2, nz2t_3],
+  "category": "combo2",
+  "sizes": ["28", "30", "32"],
+  "description": "Comfortable track pants suitable for running, gym, or casual wear. Designed for a regular fit with breathable fabric for all-day comfort.",
+  "fabric": "Cotton Blend",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Cotton Blend",
+      "Fit : Regular",
+      "Pattern : Plain",
+      "Net Quantity (N) : 1"
+    ]
+  }
+  },
+  {
+  "id": "1f2sss",
+  "name": "ARDLOR Men's Regular Fit Cotton Blend Formal Trousers - Pack of 2",
+  "price": 99,
+  "originalPrice": 705,
+  "discount": 86,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": f_12sss_1,
+  "images": [f_12sss_1, f_12sss_2, f_12sss_3, f_12sss_4],
+  "category": "combo2",
+  "sizes": ["M", "L", "XL", "XXL"],
+  "description": "ARDLOR men's regular fit formal trousers in cotton blend, sold as a pack of 2. Designed for comfort and style, suitable for office, formal occasions, or casual wear.",
+  "fabric": "Cotton Blend",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Cotton Blend",
+      "Fit : Regular",
+      "Pattern : Solid",
+      "Net Quantity (N) : 2"
+    ]
+  }
+  },
+  {
+  "id": "1jwuos",
+  "name": "Men's Shorts Boxer",
+  "price": 99,
+  "originalPrice": 212,
+  "discount": 53,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": jwuos_1,
+  "images": [jwuos_1, jwuos_2, jwuos_3, jwuos_4],
+  "category": "combo2",
+  "sizes": ["28", "30", "32", "Free Size"],
+  "description": "Modern men's boxer shorts made from mercerized cotton blend for comfort and functionality. Ideal for casual wear or lounging at home. Made in India.",
+  "fabric": "Cotton Blend",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Cotton Blend",
+      "Pattern : Check",
+      "Net Quantity (N) : 3",
+      "Country of Origin : India"
+    ]
+  }
+  },
+  {
+  "id": "o9tx7",
+  "name": "Men Formal Shirts",
+  "price": 99,
+  "originalPrice": 266,
+  "discount": 63,
+  "rating": 3.8,
+  "reviews": 8705,
+  "image": o9tx7_1,
+  "images": [o9tx7_1, o9tx7_2, o9tx7_3, o9tx7_4],
+  "category": "combo2",
+  "sizes": ["M", "L", "XL"],
+  "description": "Men's formal cotton blend shirt with long sleeves, perfect for office or formal occasions. Comfortable fit with a classic style. Made in India.",
+  "fabric": "Cotton Blend",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Fabric - Cotton Blend",
+      "Sleeve Length : Long Sleeve",
+      "Pattern : Plain",
+      "Net Quantity (N) : 1",
+      "Country of Origin : India"
+    ]
+  }
+  },
+  {
+  "id": "8popwm",
+  "name": "Stylish Gym Vests",
+  "price": 100,
+  "originalPrice": 277,
+  "discount": 64,
+  "rating": 4.2,
+  "reviews": 5421,
+  "image": popwm_1,
+  "images": [popwm_1, popwm_2, popwm_3, popwm_4],
+  "category": "combo2",
+  "sizes": ["S", "M", "XL", "XXL", "XXXL"],
+  "description": "Stylish gym vests made for comfort and performance. Ideal for workouts and daily fitness routines. Made in India.",
+  "fabric": "Cotton Blend",
+  "care": "Machine Wash",
+  "shipping": "10-12 Days",
+  "details": {
+    "kurta": [
+      "Net Quantity (N) : 2",
+      "Country of Origin : India"
+    ]
+  }
+},
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  //kurties
   {
     id: 1,
     name: "White & Pink Fairytale Cotton Suit Set",
@@ -284,7 +670,7 @@ export const products: Product[] = [
   {
     id: 2,
     name: "Vamika Pink Cotton Suit Set",
-    price: 79,
+    price: 99,
     originalPrice: 1949,
     discount: 96,
     rating: 4.5,
@@ -306,30 +692,6 @@ export const products: Product[] = [
       ],
       pants: ["Fabric - Cotton Blend", "Length - 38 inch"],
       dupatta: ["Fabric - Chiffon", "2.25 mtr embroidered"]
-    }
-  },
-  {
-    id: 3,
-    name: "Kurti Combo Set of 2",
-    price: 99,
-    originalPrice: 1999,
-    discount: 95,
-    rating: 4.0,
-    reviews: 1358,
-    image: kurtiCombo2,
-    images: [kurtiCombo2],
-    category: "combo2",
-    sizes: ["S", "M", "L", "XL", "XXL"],
-    description: "Set of 2 beautiful kurtis in different colors and patterns.",
-    fabric: "Cotton Blend",
-    care: "Machine Wash",
-    shipping: "10-12 Days",
-    details: {
-      kurta: [
-        "Fabric - Cotton Blend",
-        "Combo of 2 Kurtis",
-        "Casual Regular Fit"
-      ]
     }
   },
   {
@@ -1718,7 +2080,7 @@ export const products: Product[] = [
     pants: [],
     dupatta: []
   }
-},
+  },
 
 
 
